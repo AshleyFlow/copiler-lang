@@ -1,6 +1,6 @@
 use std::{iter::Peekable, str::Chars};
 
-#[derive(Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum Token {
     Identifier(Box<String>),
     Number(f32),
@@ -73,6 +73,8 @@ impl<'lexer> Lexer<'lexer> {
                     if !char.is_whitespace() {
                         panic!("Unexpected char: '{}'", char)
                     }
+
+                    self.iter.next().unwrap();
                 }
             }
         }

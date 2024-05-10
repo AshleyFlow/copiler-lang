@@ -1,17 +1,44 @@
 mod lexer;
 
 use crate::lexer::{Lexer, Token};
+use std::iter::Peekable;
+
+struct Parser<'a> {
+    iter: Peekable<core::slice::Iter<'a, Token>>,
+}
+
+impl<'parser> Parser<'parser> {
+    fn next(&mut self) {
+        let token = self.iter.peek();
+
+        if let Some(token) = token {
+            match token {
+                _ => todo!(),
+            }
+        }
+    }
+
+    pub fn load(&mut self) {
+        while self.iter.peek().is_some() {
+            self.next();
+        }
+    }
+
+    pub fn new(tokens: &'parser Vec<Token>) -> Self {
+        let iter = tokens.iter().peekable();
+
+        Self { iter }
+    }
+}
 
 fn main() {
-    let src = "exit(0)";
+    let src = "print(10.25) exit(0)";
 
     let mut lexer = Lexer::new(src);
     let tokens = lexer.load();
 
-    println!("{:?}", tokens);
+    let mut parser = Parser::new(tokens);
+    parser.load();
 
-    std::process::exit(match tokens[2] {
-        Token::Number(num) => num as i32,
-        _ => panic!(),
-    });
+    std::process::exit(0);
 }
