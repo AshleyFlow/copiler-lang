@@ -1,12 +1,7 @@
-use std::{iter::Peekable, str::Chars};
-
-use crate::cursor::ItemKind;
+use crate::cursor::{Cursor, ItemKind};
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum Token {
-    Sof,
-    Eof,
-
     Identifier(String),
     Literal(Literal),
 
@@ -22,45 +17,43 @@ pub enum Literal {
 impl ItemKind for Token {
     fn kind(&self) -> u8 {
         match self {
-            Self::Eof => 0,
-            Self::Identifier(_) => 1,
-            Self::Literal(_) => 2,
-            Self::ParenClose => 3,
-            Self::ParenOpen => 4,
-            Self::Sof => 5,
+            Self::Identifier(_) => 0,
+            Self::Literal(_) => 1,
+            Self::ParenClose => 2,
+            Self::ParenOpen => 3,
         }
     }
 }
 
-pub struct Lexer<'a> {
-    iter: Peekable<Chars<'a>>,
+pub struct Lexer {
+    cursor: Cursor<char>,
     tokens: Vec<Token>,
 }
 
-impl<'lexer> Lexer<'lexer> {
+impl<'lexer> Lexer {
     fn identifier(&mut self) {
-        let mut buffer = String::from(self.iter.next().unwrap());
+        let mut buffer = String::from(self.cursor.eat().unwrap());
 
-        while let Some(char) = self.iter.peek() {
-            if char.is_alphanumeric() {
-                buffer.push(self.iter.next().unwrap());
-            } else {
-                break;
-            }
+        while self
+            .cursor
+            .peek_iff(None, |char| char.is_alphabetic())
+            .is_some()
+        {
+            buffer.push(self.cursor.eat().unwrap());
         }
 
         self.tokens.push(Token::Identifier(buffer));
     }
 
     fn number(&mut self) {
-        let mut buffer = String::from(self.iter.next().unwrap());
+        let mut buffer = String::from(self.cursor.eat().unwrap());
 
-        while let Some(char) = self.iter.peek() {
-            if char.is_numeric() || *char == '.' {
-                buffer.push(self.iter.next().unwrap());
-            } else {
-                break;
-            }
+        while self
+            .cursor
+            .peek_iff(None, |char| char.is_numeric() || char == '.')
+            .is_some()
+        {
+            buffer.push(self.cursor.eat().unwrap());
         }
 
         let float: f32 = buffer.parse().unwrap();
@@ -73,7 +66,7 @@ impl<'lexer> Lexer<'lexer> {
     }
 
     fn next(&mut self) -> Option<&Token> {
-        let char = self.iter.peek();
+        let char = self.cursor.peek(None);
         let len = self.tokens.len();
 
         if let Some(char) = char {
@@ -86,11 +79,11 @@ impl<'lexer> Lexer<'lexer> {
                 }
                 '(' => {
                     self.tokens.push(Token::ParenOpen);
-                    self.iter.next().unwrap();
+                    self.cursor.eat();
                 }
                 ')' => {
                     self.tokens.push(Token::ParenClose);
-                    self.iter.next().unwrap();
+                    self.cursor.eat();
                 }
                 '"' => {
                     unimplemented!()
@@ -103,7 +96,7 @@ impl<'lexer> Lexer<'lexer> {
                         panic!("Unexpected char: '{}'", char)
                     }
 
-                    self.iter.next().unwrap();
+                    self.cursor.eat();
                 }
             }
         }
@@ -116,21 +109,17 @@ impl<'lexer> Lexer<'lexer> {
     }
 
     pub fn load(&'lexer mut self) -> &'lexer Vec<Token> {
-        self.tokens.push(Token::Sof);
-
-        while self.iter.peek().is_some() {
+        while self.cursor.peek(None).is_some() {
             self.next();
         }
-
-        self.tokens.push(Token::Eof);
 
         &self.tokens
     }
 
     pub fn new(src: &'lexer str) -> Self {
-        let iter = src.chars().peekable();
+        let cursor = Cursor::new(src.chars().collect());
         let tokens = vec![];
 
-        Self { iter, tokens }
+        Self { cursor, tokens }
     }
 }

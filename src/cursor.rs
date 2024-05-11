@@ -27,6 +27,18 @@ where
         }
     }
 
+    pub fn eat_iff(&mut self, handle: fn(T) -> bool) -> Option<T> {
+        let peeked = self.peek(None);
+
+        if peeked.is_some() && handle(peeked.unwrap()) {
+            self.pos += 1;
+
+            Some(self.items[self.pos - 1].clone())
+        } else {
+            None
+        }
+    }
+
     pub fn eat_if(&mut self, expected: T) -> Option<T>
     where
         T: ItemKind,
@@ -37,6 +49,23 @@ where
             self.pos += 1;
 
             Some(self.items[self.pos - 1].clone())
+        } else {
+            None
+        }
+    }
+
+    pub fn peek_iff(&mut self, offset: Option<usize>, handle: fn(T) -> bool) -> Option<T> {
+        let offset = offset.unwrap_or(1);
+        let pos = self.pos + offset;
+
+        if pos <= self.items.len() {
+            let peeked = &self.items[pos - 1];
+
+            if handle(peeked.clone()) {
+                Some(peeked.clone())
+            } else {
+                None
+            }
         } else {
             None
         }
