@@ -1,12 +1,35 @@
 use std::{iter::Peekable, str::Chars};
 
+use crate::cursor::ItemKind;
+
 #[derive(PartialEq, Clone, Debug)]
 pub enum Token {
+    Sof,
+    Eof,
+
     Identifier(String),
-    Number(f32),
+    Literal(Literal),
 
     ParenOpen,
     ParenClose,
+}
+
+#[derive(PartialEq, Clone, Debug)]
+pub enum Literal {
+    Number(f32),
+}
+
+impl ItemKind for Token {
+    fn kind(&self) -> u8 {
+        match self {
+            Self::Eof => 0,
+            Self::Identifier(_) => 1,
+            Self::Literal(_) => 2,
+            Self::ParenClose => 3,
+            Self::ParenOpen => 4,
+            Self::Sof => 5,
+        }
+    }
 }
 
 pub struct Lexer<'a> {
@@ -40,7 +63,13 @@ impl<'lexer> Lexer<'lexer> {
             }
         }
 
-        self.tokens.push(Token::Number(buffer.parse().unwrap()));
+        let float: f32 = buffer.parse().unwrap();
+
+        if float.to_string() != buffer {
+            println!("Warning: '{}' turns into '{}'", buffer, float);
+        }
+
+        self.tokens.push(Token::Literal(Literal::Number(float)));
     }
 
     fn next(&mut self) -> Option<&Token> {
@@ -87,9 +116,13 @@ impl<'lexer> Lexer<'lexer> {
     }
 
     pub fn load(&'lexer mut self) -> &'lexer Vec<Token> {
+        self.tokens.push(Token::Sof);
+
         while self.iter.peek().is_some() {
             self.next();
         }
+
+        self.tokens.push(Token::Eof);
 
         &self.tokens
     }
