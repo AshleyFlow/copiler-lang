@@ -2,7 +2,7 @@ use std::{iter::Peekable, str::Chars};
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum Token {
-    Identifier(Box<String>),
+    Identifier(String),
     Number(f32),
 
     ParenOpen,
@@ -26,7 +26,7 @@ impl<'lexer> Lexer<'lexer> {
             }
         }
 
-        self.tokens.push(Token::Identifier(buffer.into()));
+        self.tokens.push(Token::Identifier(buffer));
     }
 
     fn number(&mut self) {

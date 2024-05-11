@@ -11,10 +11,8 @@ impl<'parser> Parser<'parser> {
     fn next(&mut self) {
         let token = self.iter.peek();
 
-        if let Some(token) = token {
-            match token {
-                _ => todo!(),
-            }
+        if let Some(_token) = token {
+            todo!()
         }
     }
 
@@ -24,7 +22,7 @@ impl<'parser> Parser<'parser> {
         }
     }
 
-    pub fn new(tokens: &'parser Vec<Token>) -> Self {
+    pub fn new(tokens: &'parser [Token]) -> Self {
         let iter = tokens.iter().peekable();
 
         Self { iter }
