@@ -5,13 +5,16 @@ pub enum Token {
     Identifier(String),
     Literal(Literal),
 
+    Comma,
     ParenOpen,
     ParenClose,
 }
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum Literal {
+    String(String),
     Number(f32),
+    Char(char),
 }
 
 impl ItemKind for Token {
@@ -19,8 +22,9 @@ impl ItemKind for Token {
         match self {
             Self::Identifier(_) => 0,
             Self::Literal(_) => 1,
-            Self::ParenClose => 2,
-            Self::ParenOpen => 3,
+            Self::Comma => 2,
+            Self::ParenClose => 3,
+            Self::ParenOpen => 4,
         }
     }
 }
@@ -48,12 +52,8 @@ impl<'lexer> Lexer {
     fn number(&mut self) {
         let mut buffer = String::from(self.cursor.eat().unwrap());
 
-        while self
-            .cursor
-            .peek_iff(None, |char| char.is_numeric() || char == '.')
-            .is_some()
-        {
-            buffer.push(self.cursor.eat().unwrap());
+        while let Some(char) = self.cursor.eat_iff(|char| char.is_numeric() || char == '.') {
+            buffer.push(char);
         }
 
         let float: f32 = buffer.parse().unwrap();
@@ -63,6 +63,32 @@ impl<'lexer> Lexer {
         }
 
         self.tokens.push(Token::Literal(Literal::Number(float)));
+    }
+
+    fn string(&mut self) {
+        let mut buffer = String::new();
+        self.cursor.eat(); // "
+
+        while let Some(char) = self.cursor.eat() {
+            if char != '"' {
+                buffer.push(char);
+            } else {
+                break;
+            }
+        }
+
+        self.tokens.push(Token::Literal(Literal::String(buffer)));
+    }
+
+    fn char(&mut self) {
+        let char = self.cursor.eat().unwrap();
+        self.cursor.eat(); // "
+
+        if self.cursor.eat_iff(|char| char == '\'').is_none() {
+            panic!("Expected ' after one character")
+        }
+
+        self.tokens.push(Token::Literal(Literal::Char(char)));
     }
 
     fn next(&mut self) -> Option<&Token> {
@@ -85,12 +111,12 @@ impl<'lexer> Lexer {
                     self.tokens.push(Token::ParenClose);
                     self.cursor.eat();
                 }
-                '"' => {
-                    unimplemented!()
+                ',' => {
+                    self.tokens.push(Token::Comma);
+                    self.cursor.eat();
                 }
-                '\'' => {
-                    unimplemented!()
-                }
+                '"' => self.string(),
+                '\'' => self.char(),
                 _ => {
                     if !char.is_whitespace() {
                         panic!("Unexpected char: '{}'", char)
