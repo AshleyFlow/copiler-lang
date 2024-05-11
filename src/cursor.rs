@@ -33,10 +33,12 @@ where
     {
         let peeked = self.peek(None);
 
+        println!("{}, {}", peeked.clone().unwrap().kind(), expected_kind);
+
         if peeked.is_some() && peeked.unwrap().kind() == expected_kind {
             self.pos += 1;
 
-            Some(self.items[self.pos].clone())
+            Some(self.items[self.pos - 1].clone())
         } else {
             None
         }
@@ -46,8 +48,8 @@ where
         let offset = offset.unwrap_or(1);
         let pos = self.pos + offset;
 
-        if pos < self.items.len() {
-            Some(self.items[pos].clone())
+        if pos <= self.items.len() {
+            Some(self.items[pos - 1].clone())
         } else {
             None
         }
