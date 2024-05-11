@@ -21,7 +21,7 @@ where
         if peeked.is_some() {
             self.pos += 1;
 
-            Some(self.items[self.pos].clone())
+            Some(self.items[self.pos - 1].clone())
         } else {
             None
         }
