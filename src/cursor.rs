@@ -9,7 +9,7 @@ pub struct Cursor<T> {
 
 impl<T> Cursor<T>
 where
-    T: PartialEq<T> + Clone,
+    T: Clone,
 {
     pub fn new(items: Vec<T>) -> Self {
         Self { items, pos: 0 }
@@ -27,15 +27,13 @@ where
         }
     }
 
-    pub fn eat_if(&mut self, expected_kind: u8) -> Option<T>
+    pub fn eat_if(&mut self, expected: T) -> Option<T>
     where
         T: ItemKind,
     {
         let peeked = self.peek(None);
 
-        println!("{}, {}", peeked.clone().unwrap().kind(), expected_kind);
-
-        if peeked.is_some() && peeked.unwrap().kind() == expected_kind {
+        if peeked.is_some() && peeked.unwrap().kind() == expected.kind() {
             self.pos += 1;
 
             Some(self.items[self.pos - 1].clone())
