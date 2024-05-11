@@ -1,3 +1,7 @@
+pub trait ItemKind {
+    fn kind(&self) -> u8;
+}
+
 pub struct Cursor<T> {
     items: Vec<T>,
     pos: usize,
@@ -23,10 +27,13 @@ where
         }
     }
 
-    pub fn eat_if(&mut self, expected: T) -> Option<T> {
+    pub fn eat_if(&mut self, expected_kind: u8) -> Option<T>
+    where
+        T: ItemKind,
+    {
         let peeked = self.peek(None);
 
-        if peeked.is_some() && peeked.unwrap() == expected {
+        if peeked.is_some() && peeked.unwrap().kind() == expected_kind {
             self.pos += 1;
 
             Some(self.items[self.pos].clone())
