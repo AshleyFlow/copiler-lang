@@ -17,6 +17,7 @@ let b = 25.5234
 "#;
 
 #[derive(Debug)]
+#[allow(dead_code)]
 enum Expression {
     Variable(String, Literal),
     Value(Literal),
@@ -79,6 +80,40 @@ impl Parser {
         Expression::Scope(stack)
     }
 
+    /**
+    Loads the scope and returns its last expression
+
+    ### Example
+
+    ```rs
+    let mut lexer = Lexer::new("let a = 200 50.26");
+    let tokens = lexer.load();
+    let mut parser = Parser::new(tokens);
+    let expression = parser.load_last_expr();
+
+    println!("{:#?}", expression);
+
+    /*
+    --- OUTPUT ---
+
+    Scope(
+        [
+            Variable(
+                "a",
+                Number(
+                    200.0
+                ),
+            ),
+            Value(
+                Number(
+                    50.26
+                ),
+            ),
+        ]
+    )
+    */
+    ```
+    **/
     pub fn load(&mut self) -> Expression {
         self.scope()
     }
