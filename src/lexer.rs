@@ -1,10 +1,13 @@
-use crate::cursor::{Cursor, ItemKind};
+use crate::cursor::Cursor;
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum Token {
     Identifier(String),
     Literal(Literal),
 
+    ScopeOpen,
+    ScopeClose,
+    Equal,
     Comma,
     ParenOpen,
     ParenClose,
@@ -15,18 +18,6 @@ pub enum Literal {
     String(String),
     Number(f32),
     Char(char),
-}
-
-impl ItemKind for Token {
-    fn kind(&self) -> u8 {
-        match self {
-            Self::Identifier(_) => 0,
-            Self::Literal(_) => 1,
-            Self::Comma => 2,
-            Self::ParenClose => 3,
-            Self::ParenOpen => 4,
-        }
-    }
 }
 
 pub struct Lexer {
@@ -103,6 +94,16 @@ impl<'lexer> Lexer {
                 '0'..='9' => {
                     self.number();
                 }
+                '"' => self.string(),
+                '\'' => self.char(),
+                '{' => {
+                    self.tokens.push(Token::ScopeOpen);
+                    self.cursor.eat();
+                }
+                '}' => {
+                    self.tokens.push(Token::ScopeClose);
+                    self.cursor.eat();
+                }
                 '(' => {
                     self.tokens.push(Token::ParenOpen);
                     self.cursor.eat();
@@ -115,8 +116,10 @@ impl<'lexer> Lexer {
                     self.tokens.push(Token::Comma);
                     self.cursor.eat();
                 }
-                '"' => self.string(),
-                '\'' => self.char(),
+                '=' => {
+                    self.tokens.push(Token::Equal);
+                    self.cursor.eat();
+                }
                 _ => {
                     if !char.is_whitespace() {
                         panic!("Unexpected char: '{}'", char)
