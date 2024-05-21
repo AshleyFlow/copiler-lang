@@ -13,7 +13,7 @@ pub struct Parser {
 }
 
 impl Parser {
-    fn variable(&mut self) -> Expression {
+    fn parse_variable(&mut self) -> Expression {
         let identifier = if let Token::Identifier(identifier) = self.cursor.eat().unwrap() {
             identifier
         } else {
@@ -46,7 +46,7 @@ impl Parser {
                 }
                 Token::Identifier(identifier) => {
                     if identifier == "let" {
-                        Some(self.variable())
+                        Some(self.parse_variable())
                     } else {
                         panic!("Unexpected identifier '{}'", identifier)
                     }
