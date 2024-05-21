@@ -37,6 +37,10 @@ impl Parser {
         Expression::Variable(identifier, value)
     }
 
+    fn parse_fn_call(&mut self, _identifier: String) -> Expression {
+        todo!()
+    }
+
     pub fn parse_expression(&mut self) -> Option<Expression> {
         if let Some(token) = self.cursor.eat() {
             match token {
@@ -44,13 +48,10 @@ impl Parser {
                     let expr = Expression::Value(literal);
                     Some(expr)
                 }
-                Token::Identifier(identifier) => {
-                    if identifier == "let" {
-                        Some(self.parse_variable())
-                    } else {
-                        panic!("Unexpected identifier '{}'", identifier)
-                    }
-                }
+                Token::Identifier(identifier) => match identifier.as_str() {
+                    "let" => Some(self.parse_variable()),
+                    _ => Some(self.parse_fn_call(identifier)),
+                },
                 Token::LScope => Some(self.parse_scope()),
                 Token::RScope => None,
                 _ => todo!(),
