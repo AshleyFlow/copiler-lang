@@ -1,5 +1,5 @@
-use crate::cursor::Cursor;
-use crate::lexer::{Literal, Token};
+use crate::frontend::lexer::{Literal, Token};
+use crate::util::cursor::Cursor;
 
 #[derive(Debug)]
 pub enum Expression {

@@ -1,4 +1,4 @@
-use crate::cursor::Cursor;
+use crate::util::cursor::Cursor;
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum Token {

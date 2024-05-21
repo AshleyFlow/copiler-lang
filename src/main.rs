@@ -1,9 +1,7 @@
-use crate::parser::Parser;
-use lexer::Lexer;
+use crate::frontend::{lexer::Lexer, parser::Parser};
 
-pub mod cursor;
-mod lexer;
-mod parser;
+pub mod frontend;
+pub mod util;
 
 const SRC: &str = r#"
 
