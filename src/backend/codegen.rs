@@ -41,17 +41,23 @@ impl CodeGen {
             Expression::Value(_) => panic!("Found standalone value expression"),
             Expression::Variable(key, value) => {
                 let type_str = match value {
-                    Literal::Char(_) | Literal::String(_) => "string",
-                    Literal::Number(_) => "number",
+                    Literal::Identifier(_) => None,
+                    Literal::Char(_) | Literal::String(_) => Some("string"),
+                    Literal::Number(_) => Some("number"),
                 };
 
                 let value_str = match value {
+                    Literal::Identifier(ident) => ident,
                     Literal::Char(char) => format!("\"{char}\""),
                     Literal::String(string) => format!("\"{string}\""),
                     Literal::Number(number) => number.to_string(),
                 };
 
-                self.write(format!("local {key}: {type_str} = {value_str}"));
+                if let Some(type_str) = type_str {
+                    self.write(format!("local {key}: {type_str} = {value_str}"));
+                } else {
+                    self.write(format!("local {key} = {value_str}"));
+                }
             }
         }
     }

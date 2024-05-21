@@ -28,10 +28,10 @@ impl Parser {
             }
         });
 
-        let value = if let Token::Literal(literal) = self.cursor.eat().unwrap() {
-            literal
-        } else {
-            panic!()
+        let value = match self.cursor.eat().unwrap() {
+            Token::Literal(literal) => literal,
+            Token::Identifier(ident) => Literal::Identifier(ident),
+            _ => panic!(),
         };
 
         Expression::Variable(identifier, value)

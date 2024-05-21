@@ -7,6 +7,7 @@ pub mod util;
 const SRC: &str = r#"
 
 let a = "This is a string"
+let a_copy = a
 
 {
     let c = 'c'
