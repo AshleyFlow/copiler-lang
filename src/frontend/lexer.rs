@@ -5,12 +5,12 @@ pub enum Token {
     Identifier(String),
     Literal(Literal),
 
-    ScopeOpen,
-    ScopeClose,
+    LScope,
+    RScope,
     Equal,
     Comma,
-    ParenOpen,
-    ParenClose,
+    LParen,
+    RParen,
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -97,19 +97,19 @@ impl<'lexer> Lexer {
                 '"' => self.string(),
                 '\'' => self.char(),
                 '{' => {
-                    self.tokens.push(Token::ScopeOpen);
+                    self.tokens.push(Token::LScope);
                     self.cursor.eat();
                 }
                 '}' => {
-                    self.tokens.push(Token::ScopeClose);
+                    self.tokens.push(Token::RScope);
                     self.cursor.eat();
                 }
                 '(' => {
-                    self.tokens.push(Token::ParenOpen);
+                    self.tokens.push(Token::LParen);
                     self.cursor.eat();
                 }
                 ')' => {
-                    self.tokens.push(Token::ParenClose);
+                    self.tokens.push(Token::RParen);
                     self.cursor.eat();
                 }
                 ',' => {

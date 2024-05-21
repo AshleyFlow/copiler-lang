@@ -51,8 +51,8 @@ impl Parser {
                         panic!("Unexpected identifier '{}'", identifier)
                     }
                 }
-                Token::ScopeOpen => Some(self.parse_scope()),
-                Token::ScopeClose => None,
+                Token::LScope => Some(self.parse_scope()),
+                Token::RScope => None,
                 _ => todo!(),
             }
         } else {
