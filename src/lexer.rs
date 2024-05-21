@@ -31,7 +31,7 @@ impl<'lexer> Lexer {
 
         while self
             .cursor
-            .peek_iff(None, |char| char.is_alphabetic())
+            .peek_iff(None, |char| char.is_alphabetic() || char == '_')
             .is_some()
         {
             buffer.push(self.cursor.eat().unwrap());
@@ -88,7 +88,7 @@ impl<'lexer> Lexer {
 
         if let Some(char) = char {
             match char {
-                'a'..='z' | 'A'..='Z' => {
+                '_' | 'a'..='z' | 'A'..='Z' => {
                     self.identifier();
                 }
                 '0'..='9' => {
