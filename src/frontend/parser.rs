@@ -1,7 +1,7 @@
 use crate::frontend::lexer::{Literal, Token};
 use crate::util::cursor::Cursor;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expression {
     Variable(String, Literal),
     Value(Literal),

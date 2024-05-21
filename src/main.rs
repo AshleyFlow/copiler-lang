@@ -1,5 +1,6 @@
-use crate::frontend::{lexer::Lexer, parser::Parser};
+use backend::codegen;
 
+pub mod backend;
 pub mod frontend;
 pub mod util;
 
@@ -20,10 +21,5 @@ let b = 25.5234
 "#;
 
 fn main() {
-    let mut lexer = Lexer::new(SRC);
-    let tokens = lexer.load();
-    let mut parser = Parser::new(tokens);
-    let expression = parser.load();
-
-    println!("{:#?}", expression);
+    codegen::gen(SRC);
 }
