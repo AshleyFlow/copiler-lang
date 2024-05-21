@@ -10,6 +10,10 @@ let a = "This is a string"
 
 {
     let c = 'c'
+
+    {
+        let _long_str = 5000
+    }
 }
 
 let b = 25.5234
@@ -53,69 +57,41 @@ impl Parser {
         Expression::Variable(identifier, value)
     }
 
-    pub fn scope(&mut self) -> Expression {
-        let mut stack: Vec<Expression> = Vec::new();
-
-        while let Some(token) = self.cursor.eat() {
+    pub fn parse_expression(&mut self) -> Option<Expression> {
+        if let Some(token) = self.cursor.eat() {
             match token {
                 Token::Literal(literal) => {
                     let expr = Expression::Value(literal);
-                    stack.push(expr);
+                    Some(expr)
                 }
                 Token::Identifier(identifier) => {
                     if identifier == "let" {
-                        stack.push(self.variable());
+                        Some(self.variable())
                     } else {
                         panic!("Unexpected identifier '{}'", identifier)
                     }
                 }
-                Token::ScopeOpen => stack.push(self.scope()),
-                Token::ScopeClose => {
-                    break;
-                }
+                Token::ScopeOpen => Some(self.parse_scope()),
+                Token::ScopeClose => None,
                 _ => todo!(),
             }
+        } else {
+            None
+        }
+    }
+
+    pub fn parse_scope(&mut self) -> Expression {
+        let mut stack: Vec<Expression> = Vec::new();
+
+        while let Some(expr) = self.parse_expression() {
+            stack.push(expr);
         }
 
         Expression::Scope(stack)
     }
 
-    /**
-    Loads the scope and returns its last expression
-
-    ### Example
-
-    ```rs
-    let mut lexer = Lexer::new("let a = 200 50.26");
-    let tokens = lexer.load();
-    let mut parser = Parser::new(tokens);
-    let expression = parser.load_last_expr();
-
-    println!("{:#?}", expression);
-
-    /*
-    --- OUTPUT ---
-
-    Scope(
-        [
-            Variable(
-                "a",
-                Number(
-                    200.0
-                ),
-            ),
-            Value(
-                Number(
-                    50.26
-                ),
-            ),
-        ]
-    )
-    */
-    ```
-    **/
     pub fn load(&mut self) -> Expression {
-        self.scope()
+        self.parse_scope()
     }
 
     pub fn new(tokens: &[Token]) -> Self {
