@@ -5,7 +5,7 @@ use crate::{
 
 pub mod codegen;
 
-pub fn gen(scr: &str) {
+pub fn gen(scr: &str) -> String {
     let mut lexer = Lexer::new(scr);
     let tokens = lexer.load();
 
@@ -18,5 +18,5 @@ pub fn gen(scr: &str) {
     let mut codegen = CodeGen::new(expression);
     codegen.run();
 
-    println!("{}", codegen.src);
+    codegen.src
 }

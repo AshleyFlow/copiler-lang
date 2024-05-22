@@ -1,0 +1,13 @@
+let a = "This is a string"
+let a_copy = a
+
+{
+    let funny = (a, b, c) {
+        let a_copy = a
+        
+        print(a_copy, b, c)
+    }
+}
+
+print(a, a_copy)
+exit(0)

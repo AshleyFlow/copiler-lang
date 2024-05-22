@@ -1,33 +1,19 @@
+use std::{env::args, fs, path::PathBuf};
+
 pub mod backend;
 pub mod frontend;
 pub mod util;
 
-const SRC: &str = r#"
-
-let a = "This is a string"
-let a_copy = a
-
-{
-    let c = 'c'
-
-    {
-        let _long_str = 5000
-    }
-
-    let funny = (a, b, c) {
-        let a_copy = a
-        
-        print(a_copy)
-    }
-}
-
-let b = 25.5234
-
-print(a, a_copy, b)
-exit(0)
-
-"#;
-
 fn main() {
-    backend::gen(SRC);
+    let args = args().collect::<Vec<_>>();
+    let src = fs::read(&args[1]).expect("Failed to read file");
+
+    let out = backend::gen(&String::from_utf8(src).unwrap());
+    let dist_dir = PathBuf::from("dist/");
+
+    if !dist_dir.exists() {
+        fs::create_dir_all(&dist_dir).expect("Failed to create dist directory");
+    }
+
+    fs::write(dist_dir.join("out.luau"), out).expect("Failed to write");
 }
