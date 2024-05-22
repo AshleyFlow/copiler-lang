@@ -2,10 +2,33 @@ use crate::frontend::lexer::{Literal, Token};
 use crate::util::cursor::Cursor;
 
 #[derive(Debug, Clone)]
+pub enum Statement {
+    VariableDeclaration {
+        ident: Expression,
+        value: Expression,
+    },
+    Scope(Vec<Statement>),
+    FunctionCall {
+        ident: Expression,
+        args: Vec<Expression>,
+    },
+}
+
+#[derive(Debug, Clone)]
 pub enum Expression {
-    Variable(String, Literal),
-    Value(Literal),
-    Scope(Vec<Expression>),
+    Identifier(String),
+    Value(Box<Expression>),
+    Literal(Literal),
+}
+
+impl Expression {
+    pub fn eval(&self) -> Literal {
+        match self {
+            Self::Literal(literal) => literal.clone(),
+            Self::Value(value) => value.eval(),
+            _ => panic!("{self:?} can't be evaluated into a literal"),
+        }
+    }
 }
 
 pub struct Parser {
@@ -13,12 +36,22 @@ pub struct Parser {
 }
 
 impl Parser {
-    fn parse_variable(&mut self) -> Expression {
-        let identifier = if let Token::Identifier(identifier) = self.cursor.eat().unwrap() {
-            identifier
+    fn parse_expression(&mut self) -> Option<Expression> {
+        if let Some(token) = self.cursor.eat() {
+            match token {
+                Token::Identifier(identifier) => Some(Expression::Identifier(identifier)),
+                Token::Literal(literal) => {
+                    Some(Expression::Value(Box::new(Expression::Literal(literal))))
+                }
+                _ => todo!(),
+            }
         } else {
-            panic!()
-        };
+            None
+        }
+    }
+
+    fn parse_variable(&mut self) -> Statement {
+        let ident = self.parse_expression().unwrap();
 
         self.cursor.eat_iff(|token| {
             if let Token::Equal = token {
@@ -28,26 +61,18 @@ impl Parser {
             }
         });
 
-        let value = match self.cursor.eat().unwrap() {
-            Token::Literal(literal) => literal,
-            Token::Identifier(ident) => Literal::Identifier(ident),
-            _ => panic!(),
-        };
+        let value = self.parse_expression().unwrap();
 
-        Expression::Variable(identifier, value)
+        Statement::VariableDeclaration { ident, value }
     }
 
-    fn parse_fn_call(&mut self, _identifier: String) -> Expression {
+    fn parse_fn_call(&mut self, _identifier: String) -> Statement {
         todo!()
     }
 
-    pub fn parse_expression(&mut self) -> Option<Expression> {
+    pub fn parse_statement(&mut self) -> Option<Statement> {
         if let Some(token) = self.cursor.eat() {
             match token {
-                Token::Literal(literal) => {
-                    let expr = Expression::Value(literal);
-                    Some(expr)
-                }
                 Token::Identifier(identifier) => match identifier.as_str() {
                     "let" => Some(self.parse_variable()),
                     _ => Some(self.parse_fn_call(identifier)),
@@ -61,17 +86,17 @@ impl Parser {
         }
     }
 
-    pub fn parse_scope(&mut self) -> Expression {
-        let mut stack: Vec<Expression> = Vec::new();
+    pub fn parse_scope(&mut self) -> Statement {
+        let mut stack: Vec<Statement> = Vec::new();
 
-        while let Some(expr) = self.parse_expression() {
+        while let Some(expr) = self.parse_statement() {
             stack.push(expr);
         }
 
-        Expression::Scope(stack)
+        Statement::Scope(stack)
     }
 
-    pub fn load(&mut self) -> Expression {
+    pub fn load(&mut self) -> Statement {
         self.parse_scope()
     }
 

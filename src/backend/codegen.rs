@@ -1,6 +1,6 @@
 use crate::frontend::{
     lexer::{Lexer, Literal},
-    parser::{Expression, Parser},
+    parser::{Expression, Parser, Statement},
 };
 
 enum GenType {
@@ -15,15 +15,15 @@ enum GenType {
 
 struct CodeGen {
     pub src: String,
-    root_expr: Expression,
+    root_stmt: Statement,
     nest: usize,
 }
 
 impl CodeGen {
-    fn new(expression: Expression) -> Self {
+    fn new(stmt: Statement) -> Self {
         Self {
             src: String::new(),
-            root_expr: expression,
+            root_stmt: stmt,
             nest: 0,
         }
     }
@@ -50,50 +50,64 @@ impl CodeGen {
     }
 
     #[allow(clippy::only_used_in_recursion)]
-    fn gen_expression(&mut self, expr: Expression) {
-        match expr {
-            Expression::Scope(expressions) => {
+    fn gen_statement(&mut self, stmt: Statement) {
+        match stmt {
+            Statement::Scope(statements) => {
                 self.write(GenType::LScope);
                 self.nest += 1;
 
-                for expr in expressions {
-                    self.gen_expression(expr.clone());
+                for stmt in statements {
+                    self.gen_statement(stmt.clone());
                 }
 
                 self.nest -= 1;
                 self.write(GenType::RScope);
             }
-            Expression::Value(_) => panic!("Found standalone value expression"),
-            Expression::Variable(key, value) => {
-                let type_str = match value {
-                    Literal::Identifier(_) => None,
-                    Literal::Char(_) | Literal::String(_) => Some("string".into()),
-                    Literal::Number(_) => Some("number".into()),
-                };
+            Statement::VariableDeclaration { ident, value } => {
+                if let Expression::Identifier(value_ident) = value.clone() {
+                    self.write(GenType::VariableDeclaration {
+                        ident: match ident {
+                            Expression::Identifier(ident) => ident,
+                            _ => panic!("{ident:?} can't be converted to identifier"),
+                        },
+                        value: value_ident.to_owned(),
+                        value_type: None,
+                    });
+                } else {
+                    let type_str = match value.eval() {
+                        Literal::Identifier(_) => None,
+                        Literal::Char(_) | Literal::String(_) => Some("string".into()),
+                        Literal::Number(_) => Some("number".into()),
+                    };
 
-                let value_str = match value {
-                    Literal::Identifier(ident) => ident,
-                    Literal::Char(char) => format!("\"{char}\""),
-                    Literal::String(string) => format!("\"{string}\""),
-                    Literal::Number(number) => number.to_string(),
-                };
+                    let value_str = match value.eval() {
+                        Literal::Identifier(ident) => ident,
+                        Literal::Char(char) => format!("\"{char}\""),
+                        Literal::String(string) => format!("\"{string}\""),
+                        Literal::Number(number) => number.to_string(),
+                    };
 
-                self.write(GenType::VariableDeclaration {
-                    ident: key,
-                    value: value_str,
-                    value_type: type_str,
-                });
+                    self.write(GenType::VariableDeclaration {
+                        ident: match ident {
+                            Expression::Identifier(ident) => ident,
+                            _ => panic!("{ident:?} can't be converted to identifier"),
+                        },
+                        value: value_str,
+                        value_type: type_str,
+                    });
+                }
             }
+            _ => todo!(),
         }
     }
 
     fn run(&mut self) {
-        if let Expression::Scope(scope) = self.root_expr.clone() {
-            for expr in scope {
-                self.gen_expression(expr.clone());
+        if let Statement::Scope(scope) = self.root_stmt.clone() {
+            for stmt in scope {
+                self.gen_statement(stmt.clone());
             }
         } else {
-            panic!("Root expression must be a scope");
+            panic!("Root stmt must be a scope");
         }
     }
 }
@@ -104,6 +118,9 @@ pub fn gen(scr: &str) {
 
     let mut parser = Parser::new(tokens);
     let expression = parser.load();
+
+    #[cfg(debug_assertions)]
+    println!("{expression:#?}");
 
     let mut codegen = CodeGen::new(expression);
     codegen.run();
