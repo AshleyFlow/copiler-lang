@@ -1,5 +1,3 @@
-use backend::codegen;
-
 pub mod backend;
 pub mod frontend;
 pub mod util;
@@ -25,5 +23,5 @@ exit(0)
 "#;
 
 fn main() {
-    codegen::gen(SRC);
+    backend::gen(SRC);
 }

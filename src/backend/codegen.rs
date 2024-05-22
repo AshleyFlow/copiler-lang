@@ -1,9 +1,6 @@
-use crate::frontend::{
-    lexer::Lexer,
-    parser::{Expression, Parser, Statement},
-};
+use crate::frontend::parser::{Expression, Statement};
 
-enum GenType {
+pub enum GenType {
     VariableDeclaration {
         ident: String,
         value: String,
@@ -17,14 +14,14 @@ enum GenType {
     RScope,
 }
 
-struct CodeGen {
+pub struct CodeGen {
     pub src: String,
     root_stmt: Statement,
     nest: usize,
 }
 
 impl CodeGen {
-    fn new(stmt: Statement) -> Self {
+    pub fn new(stmt: Statement) -> Self {
         Self {
             src: String::new(),
             root_stmt: stmt,
@@ -132,7 +129,7 @@ impl CodeGen {
         }
     }
 
-    fn run(&mut self) {
+    pub fn run(&mut self) {
         if let Statement::Scope(scope) = self.root_stmt.clone() {
             for stmt in scope {
                 self.gen_statement(stmt.clone());
@@ -141,20 +138,4 @@ impl CodeGen {
             panic!("Root stmt must be a scope");
         }
     }
-}
-
-pub fn gen(scr: &str) {
-    let mut lexer = Lexer::new(scr);
-    let tokens = lexer.load();
-
-    let mut parser = Parser::new(tokens);
-    let expression = parser.load();
-
-    #[cfg(debug_assertions)]
-    println!("{expression:#?}");
-
-    let mut codegen = CodeGen::new(expression);
-    codegen.run();
-
-    println!("{}", codegen.src);
 }
