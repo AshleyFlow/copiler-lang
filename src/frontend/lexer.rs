@@ -73,8 +73,9 @@ impl<'lexer> Lexer {
     }
 
     fn char(&mut self) {
+        self.cursor.eat(); // '
+
         let char = self.cursor.eat().unwrap();
-        self.cursor.eat(); // "
 
         if self.cursor.eat_iff(|char| char == '\'').is_none() {
             panic!("Expected ' after one character")
