@@ -78,20 +78,25 @@ impl CodeGen {
             Expression::Char(char) => format!("\"{char}\""),
             Expression::String(string) => format!("\"{string}\""),
             Expression::Number(number) => number.to_string(),
+            Expression::Parameter { .. } => "".to_string(),
             _ => panic!(),
         }
     }
 
     fn expr_to_value_with_type(&self, expr: Expression) -> (Option<String>, String) {
-        let type_str: Option<String> = match expr {
+        let type_str: Option<String> = match expr.clone() {
             Expression::Identifier(_) => None,
             Expression::Function { .. } => None,
+            Expression::Parameter { expected_type, .. } => {
+                (*expected_type).map(Self::expr_to_value)
+            }
             Expression::Char(_) | Expression::String(_) => Some("string".into()),
             Expression::Number(_) => Some("number".into()),
         };
 
         let value_str = match expr {
             Expression::Identifier(ident) => ident,
+            Expression::Parameter { ident, .. } => Self::expr_to_value(*ident),
             Expression::Char(char) => format!("\"{char}\""),
             Expression::String(string) => format!("\"{string}\""),
             Expression::Number(number) => number.to_string(),
@@ -126,11 +131,22 @@ impl CodeGen {
                         value_type: None,
                     });
                 } else if let Expression::Function { params, stmt } = value {
-                    let mut params_str = vec![Self::expr_to_value(params[0].clone())];
+                    let mut params_str = vec![];
+
+                    let param_str = self.expr_to_value_with_type(params[0].clone());
+                    params_str.push(if let Some(expected_type) = param_str.0 {
+                        format!("{}: {expected_type}", param_str.1)
+                    } else {
+                        param_str.1
+                    });
 
                     for param in params.iter().skip(1) {
-                        let param_str = Self::expr_to_value(param.clone());
-                        params_str.push(param_str);
+                        let param_str = self.expr_to_value_with_type(param.clone());
+                        params_str.push(if let Some(expected_type) = param_str.0 {
+                            format!("{}: {expected_type}", param_str.1)
+                        } else {
+                            param_str.1
+                        });
                     }
 
                     self.write(GenType::FunctionBody {

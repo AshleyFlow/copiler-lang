@@ -1,12 +1,15 @@
 let a = "This is a string"
 let a_copy = a
+let numbah = 100.521412
 
 {
-    let funny = (a, b, c) {
+    let funny = (a: string, b, c) {
         let a_copy = a
         
         print(a_copy, b, c)
     }
+
+    funny(a, a_copy, "cool!")
 }
 
 print(a, a_copy)

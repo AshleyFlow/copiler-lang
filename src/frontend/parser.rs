@@ -20,6 +20,10 @@ pub enum Expression {
         params: Vec<Expression>,
         stmt: Box<Statement>,
     },
+    Parameter {
+        ident: Box<Expression>,
+        expected_type: Box<Option<Expression>>,
+    },
     Identifier(String),
     String(String),
     Char(char),
@@ -57,7 +61,26 @@ impl Parser {
     }
 
     fn parse_parameter(&mut self) -> Option<Expression> {
-        self.parse_expression()
+        let ident = self.parse_expression();
+
+        if ident.is_none() {
+            return None;
+        }
+
+        let expected_type = if self
+            .cursor
+            .eat_iff(|token| matches!(token, Token::Colon))
+            .is_some()
+        {
+            self.parse_expression()
+        } else {
+            None
+        };
+
+        Some(Expression::Parameter {
+            ident: Box::new(ident.unwrap()),
+            expected_type: Box::new(expected_type),
+        })
     }
 
     fn parse_variable(&mut self) -> Statement {

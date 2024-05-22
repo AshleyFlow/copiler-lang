@@ -5,6 +5,7 @@ pub enum Token {
     Identifier(String),
     Literal(Literal),
 
+    Colon,
     LScope,
     RScope,
     Equal,
@@ -120,6 +121,10 @@ impl<'lexer> Lexer {
                 }
                 '=' => {
                     self.tokens.push(Token::Equal);
+                    self.cursor.eat();
+                }
+                ':' => {
+                    self.tokens.push(Token::Colon);
                     self.cursor.eat();
                 }
                 _ => {
