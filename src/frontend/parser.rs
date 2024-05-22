@@ -7,6 +7,10 @@ pub enum Statement {
         ident: Expression,
         value: Expression,
     },
+    ClassConstructor {
+        ident: Expression,
+        body: Expression,
+    },
     Scope(Vec<Statement>),
     FunctionCall {
         ident: Expression,
@@ -24,6 +28,7 @@ pub enum Expression {
         ident: Box<Expression>,
         expected_type: Box<Option<Expression>>,
     },
+    ClassBody,
     Identifier(String),
     String(String),
     Char(char),
@@ -79,6 +84,11 @@ impl Parser {
             ident: Box::new(ident.unwrap()),
             expected_type: Box::new(expected_type),
         })
+    }
+
+    fn parse_class(&mut self) -> Statement {
+        // Statement::ClassConstructor { ident: (), body: () }
+        todo!()
     }
 
     fn parse_variable(&mut self) -> Statement {
@@ -160,6 +170,7 @@ impl Parser {
             match token {
                 Token::Identifier(identifier) => match identifier.as_str() {
                     "let" => Some(self.parse_variable()),
+                    "class" => Some(self.parse_class()),
                     _ => Some(self.parse_fn_call(identifier)),
                 },
                 Token::LScope => Some(self.parse_scope()),

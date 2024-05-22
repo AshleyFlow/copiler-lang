@@ -92,6 +92,7 @@ impl CodeGen {
             }
             Expression::Char(_) | Expression::String(_) => Some("string".into()),
             Expression::Number(_) => Some("number".into()),
+            Expression::ClassBody => todo!(),
         };
 
         let value_str = match expr {
@@ -119,6 +120,9 @@ impl CodeGen {
 
                 self.nest -= 1;
                 self.write(GenType::RScope);
+            }
+            Statement::ClassConstructor { ident: _, body: _ } => {
+                todo!()
             }
             Statement::VariableDeclaration { ident, value } => {
                 if let Expression::Identifier(value_ident) = value.clone() {
