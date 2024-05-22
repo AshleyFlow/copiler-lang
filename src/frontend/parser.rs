@@ -63,9 +63,7 @@ impl Parser {
     fn parse_parameter(&mut self) -> Option<Expression> {
         let ident = self.parse_expression();
 
-        if ident.is_none() {
-            return None;
-        }
+        ident.as_ref()?;
 
         let expected_type = if self
             .cursor
