@@ -16,6 +16,10 @@ pub enum Statement {
 
 #[derive(Debug, Clone)]
 pub enum Expression {
+    Function {
+        params: Vec<Expression>,
+        stmt: Box<Statement>,
+    },
     Identifier(String),
     String(String),
     Char(char),
@@ -52,6 +56,10 @@ impl Parser {
         }
     }
 
+    fn parse_parameter(&mut self) -> Option<Expression> {
+        self.parse_expression()
+    }
+
     fn parse_variable(&mut self) -> Statement {
         let ident = self.parse_expression().unwrap();
 
@@ -63,9 +71,42 @@ impl Parser {
             }
         });
 
-        let value = self.parse_expression().unwrap();
+        if matches!(self.cursor.peek(None), Some(Token::LParen)) {
+            let mut params: Vec<Expression> = vec![];
+            self.cursor.eat(); // (
 
-        Statement::VariableDeclaration { ident, value }
+            while let Some(expr) = self.parse_parameter() {
+                params.push(expr);
+
+                if matches!(self.cursor.peek(None), Some(Token::Comma)) {
+                    self.cursor.eat();
+                } else {
+                    break;
+                }
+            }
+
+            self.cursor
+                .eat_iff(|token| matches!(token, Token::RParen))
+                .unwrap();
+
+            self.cursor
+                .eat_iff(|token| matches!(token, Token::LScope))
+                .unwrap();
+
+            let scope = self.parse_scope();
+
+            Statement::VariableDeclaration {
+                ident,
+                value: Expression::Function {
+                    params,
+                    stmt: Box::new(scope),
+                },
+            }
+        } else {
+            let value = self.parse_expression().unwrap();
+
+            Statement::VariableDeclaration { ident, value }
+        }
     }
 
     fn parse_fn_call(&mut self, identifier: String) -> Statement {

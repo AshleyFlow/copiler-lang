@@ -10,6 +10,10 @@ pub enum GenType {
         ident: String,
         values: Vec<String>,
     },
+    FunctionBody {
+        ident: String,
+        params: Vec<String>,
+    },
     LScope,
     RScope,
 }
@@ -48,10 +52,19 @@ impl CodeGen {
                 let mut values_str = values[0].clone();
 
                 for value in values.iter().skip(1) {
-                    values_str += &(", ".to_owned() + value)
+                    values_str += &format!(", {value}")
                 }
 
                 format!("{ident}({values_str})")
+            }
+            GenType::FunctionBody { ident, params } => {
+                let mut params_str = params[0].clone();
+
+                for param in params.iter().skip(1) {
+                    params_str += &format!(", {param}")
+                }
+
+                format!("local function {ident}({params_str})")
             }
         };
 
@@ -59,9 +72,20 @@ impl CodeGen {
         self.src += &format!("{spaces}{code}\n");
     }
 
-    fn expr_to_value(expr: Expression) -> (Option<String>, String) {
+    fn expr_to_value(expr: Expression) -> String {
+        match expr {
+            Expression::Identifier(ident) => ident,
+            Expression::Char(char) => format!("\"{char}\""),
+            Expression::String(string) => format!("\"{string}\""),
+            Expression::Number(number) => number.to_string(),
+            _ => panic!(),
+        }
+    }
+
+    fn expr_to_value_with_type(&self, expr: Expression) -> (Option<String>, String) {
         let type_str: Option<String> = match expr {
             Expression::Identifier(_) => None,
+            Expression::Function { .. } => None,
             Expression::Char(_) | Expression::String(_) => Some("string".into()),
             Expression::Number(_) => Some("number".into()),
         };
@@ -71,6 +95,7 @@ impl CodeGen {
             Expression::Char(char) => format!("\"{char}\""),
             Expression::String(string) => format!("\"{string}\""),
             Expression::Number(number) => number.to_string(),
+            _ => panic!(),
         };
 
         (type_str, value_str)
@@ -100,8 +125,34 @@ impl CodeGen {
                         value: value_ident.to_owned(),
                         value_type: None,
                     });
+                } else if let Expression::Function { params, stmt } = value {
+                    let mut params_str = vec![Self::expr_to_value(params[0].clone())];
+
+                    for param in params.iter().skip(1) {
+                        let param_str = Self::expr_to_value(param.clone());
+                        params_str.push(param_str);
+                    }
+
+                    self.write(GenType::FunctionBody {
+                        ident: Self::expr_to_value(ident),
+                        params: params_str,
+                    });
+
+                    if let Statement::Scope(scope) = *stmt {
+                        self.nest += 1;
+
+                        for stmt in scope {
+                            self.gen_statement(stmt.clone());
+                        }
+
+                        self.nest -= 1;
+                    } else {
+                        self.gen_statement(*stmt);
+                    }
+
+                    self.write(GenType::RScope);
                 } else {
-                    let (type_str, value_str) = Self::expr_to_value(value);
+                    let (type_str, value_str) = self.expr_to_value_with_type(value);
 
                     self.write(GenType::VariableDeclaration {
                         ident: match ident {
@@ -121,7 +172,7 @@ impl CodeGen {
                 values: args
                     .iter()
                     .map(|expr| {
-                        let (_, value_str) = Self::expr_to_value(expr.clone());
+                        let (_, value_str) = self.expr_to_value_with_type(expr.clone());
                         value_str
                     })
                     .collect(),

@@ -13,6 +13,12 @@ let a_copy = a
     {
         let _long_str = 5000
     }
+
+    let funny = (a, b, c) {
+        let a_copy = a
+        
+        print(a_copy)
+    }
 }
 
 let b = 25.5234
