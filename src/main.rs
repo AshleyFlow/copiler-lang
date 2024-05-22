@@ -19,6 +19,9 @@ let a_copy = a
 
 let b = 25.5234
 
+print(a, a_copy, b)
+exit(0)
+
 "#;
 
 fn main() {

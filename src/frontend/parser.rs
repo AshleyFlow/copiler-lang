@@ -17,18 +17,9 @@ pub enum Statement {
 #[derive(Debug, Clone)]
 pub enum Expression {
     Identifier(String),
-    Value(Box<Expression>),
-    Literal(Literal),
-}
-
-impl Expression {
-    pub fn eval(&self) -> Literal {
-        match self {
-            Self::Literal(literal) => literal.clone(),
-            Self::Value(value) => value.eval(),
-            _ => panic!("{self:?} can't be evaluated into a literal"),
-        }
-    }
+    String(String),
+    Char(char),
+    Number(f32),
 }
 
 pub struct Parser {
@@ -37,13 +28,24 @@ pub struct Parser {
 
 impl Parser {
     fn parse_expression(&mut self) -> Option<Expression> {
-        if let Some(token) = self.cursor.eat() {
-            match token {
+        if let Some(token) = self.cursor.peek(None) {
+            let token = match token {
                 Token::Identifier(identifier) => Some(Expression::Identifier(identifier)),
-                Token::Literal(literal) => {
-                    Some(Expression::Value(Box::new(Expression::Literal(literal))))
-                }
-                _ => todo!(),
+                Token::Literal(literal) => match literal {
+                    Literal::Char(char) => Some(Expression::Char(char)),
+                    Literal::Identifier(ident) => Some(Expression::Identifier(ident)),
+                    Literal::Number(number) => Some(Expression::Number(number)),
+                    Literal::String(string) => Some(Expression::String(string)),
+                },
+                _ => None,
+            };
+
+            if token.is_some() {
+                self.cursor.eat();
+
+                token
+            } else {
+                None
             }
         } else {
             None
@@ -66,8 +68,29 @@ impl Parser {
         Statement::VariableDeclaration { ident, value }
     }
 
-    fn parse_fn_call(&mut self, _identifier: String) -> Statement {
-        todo!()
+    fn parse_fn_call(&mut self, identifier: String) -> Statement {
+        let mut args = vec![];
+        let ident = Expression::Identifier(identifier);
+
+        self.cursor
+            .eat_iff(|token| matches!(token, Token::LParen))
+            .unwrap();
+
+        while let Some(expr) = self.parse_expression() {
+            args.push(expr);
+
+            if matches!(self.cursor.peek(None), Some(Token::Comma)) {
+                self.cursor.eat();
+            } else {
+                break;
+            }
+        }
+
+        self.cursor
+            .eat_iff(|token| matches!(token, Token::RParen))
+            .unwrap();
+
+        Statement::FunctionCall { ident, args }
     }
 
     pub fn parse_statement(&mut self) -> Option<Statement> {

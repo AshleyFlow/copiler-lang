@@ -1,5 +1,5 @@
 use crate::frontend::{
-    lexer::{Lexer, Literal},
+    lexer::Lexer,
     parser::{Expression, Parser, Statement},
 };
 
@@ -8,6 +8,10 @@ enum GenType {
         ident: String,
         value: String,
         value_type: Option<String>,
+    },
+    FunctionCall {
+        ident: String,
+        values: Vec<String>,
     },
     LScope,
     RScope,
@@ -43,10 +47,36 @@ impl CodeGen {
                     format!("local {ident} = {value}")
                 }
             }
+            GenType::FunctionCall { ident, values } => {
+                let mut values_str = values[0].clone();
+
+                for value in values.iter().skip(1) {
+                    values_str += &(", ".to_owned() + value)
+                }
+
+                format!("{ident}({values_str})")
+            }
         };
 
         let spaces = "    ".repeat(self.nest);
         self.src += &format!("{spaces}{code}\n");
+    }
+
+    fn expr_to_value(expr: Expression) -> (Option<String>, String) {
+        let type_str: Option<String> = match expr {
+            Expression::Identifier(_) => None,
+            Expression::Char(_) | Expression::String(_) => Some("string".into()),
+            Expression::Number(_) => Some("number".into()),
+        };
+
+        let value_str = match expr {
+            Expression::Identifier(ident) => ident,
+            Expression::Char(char) => format!("\"{char}\""),
+            Expression::String(string) => format!("\"{string}\""),
+            Expression::Number(number) => number.to_string(),
+        };
+
+        (type_str, value_str)
     }
 
     #[allow(clippy::only_used_in_recursion)]
@@ -74,18 +104,7 @@ impl CodeGen {
                         value_type: None,
                     });
                 } else {
-                    let type_str = match value.eval() {
-                        Literal::Identifier(_) => None,
-                        Literal::Char(_) | Literal::String(_) => Some("string".into()),
-                        Literal::Number(_) => Some("number".into()),
-                    };
-
-                    let value_str = match value.eval() {
-                        Literal::Identifier(ident) => ident,
-                        Literal::Char(char) => format!("\"{char}\""),
-                        Literal::String(string) => format!("\"{string}\""),
-                        Literal::Number(number) => number.to_string(),
-                    };
+                    let (type_str, value_str) = Self::expr_to_value(value);
 
                     self.write(GenType::VariableDeclaration {
                         ident: match ident {
@@ -97,7 +116,19 @@ impl CodeGen {
                     });
                 }
             }
-            _ => todo!(),
+            Statement::FunctionCall { ident, args } => self.write(GenType::FunctionCall {
+                ident: match ident {
+                    Expression::Identifier(ident) => ident,
+                    _ => panic!("{ident:?} can't be converted to identifier"),
+                },
+                values: args
+                    .iter()
+                    .map(|expr| {
+                        let (_, value_str) = Self::expr_to_value(expr.clone());
+                        value_str
+                    })
+                    .collect(),
+            }),
         }
     }
 
