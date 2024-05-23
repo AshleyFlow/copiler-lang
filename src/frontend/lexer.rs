@@ -12,6 +12,7 @@ pub enum Token {
     Comma,
     LParen,
     RParen,
+    Dot,
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -125,6 +126,10 @@ impl<'lexer> Lexer {
                 }
                 ':' => {
                     self.tokens.push(Token::Colon);
+                    self.cursor.eat();
+                }
+                '.' => {
+                    self.tokens.push(Token::Dot);
                     self.cursor.eat();
                 }
                 _ => {

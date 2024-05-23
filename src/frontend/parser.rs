@@ -32,6 +32,7 @@ pub enum Expression {
         properties: Vec<Statement>,
     },
     Identifier(String),
+    Indexing(Box<Expression>, Box<Expression>),
     String(String),
     Char(char),
     Number(f32),
@@ -45,7 +46,21 @@ impl Parser {
     fn parse_expression(&mut self) -> Option<Expression> {
         if let Some(token) = self.cursor.peek(None) {
             let token = match token {
-                Token::Identifier(identifier) => Some(Expression::Identifier(identifier)),
+                Token::Identifier(identifier) => {
+                    let identifier = Expression::Identifier(identifier);
+
+                    if matches!(self.cursor.peek(Some(2)), Some(Token::Dot)) {
+                        self.cursor.eat();
+                        self.cursor.eat();
+
+                        return Some(Expression::Indexing(
+                            Box::new(identifier),
+                            Box::new(self.parse_expression().unwrap()),
+                        ));
+                    } else {
+                        Some(identifier)
+                    }
+                }
                 Token::Literal(literal) => match literal {
                     Literal::Char(char) => Some(Expression::Char(char)),
                     Literal::Identifier(ident) => Some(Expression::Identifier(ident)),
@@ -95,17 +110,19 @@ impl Parser {
             .eat_iff(|token| matches!(token, Token::LScope))
             .unwrap();
 
-        while let Some(token) = self.cursor.eat() {
+        while self
+            .cursor
+            .eat_iff(|token| !matches!(token, Token::RScope))
+            .is_some()
+        {
             let property = self.parse_variable();
 
             if let Some(property) = property {
                 properties.push(property);
             }
-
-            if matches!(token, Token::RScope) {
-                break;
-            }
         }
+
+        self.cursor.eat();
 
         Expression::ClassBody { properties }
     }
@@ -164,9 +181,9 @@ impl Parser {
         }
     }
 
-    fn parse_fn_call(&mut self, identifier: String) -> Statement {
+    fn parse_fn_call(&mut self) -> Statement {
         let mut args = vec![];
-        let ident = Expression::Identifier(identifier);
+        let ident = self.parse_expression().unwrap();
 
         self.cursor
             .eat_iff(|token| matches!(token, Token::LParen))
@@ -190,16 +207,28 @@ impl Parser {
     }
 
     pub fn parse_statement(&mut self) -> Option<Statement> {
-        if let Some(token) = self.cursor.eat() {
+        if let Some(token) = self.cursor.peek(None) {
             match token {
                 Token::Identifier(identifier) => match identifier.as_str() {
-                    "let" => Some(self.parse_variable().unwrap()),
-                    "class" => Some(self.parse_class()),
-                    _ => Some(self.parse_fn_call(identifier)),
+                    "let" => {
+                        self.cursor.eat();
+                        Some(self.parse_variable().unwrap())
+                    }
+                    "class" => {
+                        self.cursor.eat();
+                        Some(self.parse_class())
+                    }
+                    _ => Some(self.parse_fn_call()),
                 },
-                Token::LScope => Some(self.parse_scope()),
-                Token::RScope => None,
-                _ => todo!(),
+                Token::LScope => {
+                    self.cursor.eat();
+                    Some(self.parse_scope())
+                }
+                Token::RScope => {
+                    self.cursor.eat();
+                    None
+                }
+                _ => todo!("{token:?}"),
             }
         } else {
             None

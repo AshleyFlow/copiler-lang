@@ -9,6 +9,8 @@ pub fn gen(scr: &str) -> String {
     let mut lexer = Lexer::new(scr);
     let tokens = lexer.load();
 
+    println!("{tokens:#?}");
+
     let mut parser = Parser::new(tokens);
     let expression = parser.load();
 

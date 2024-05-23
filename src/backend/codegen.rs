@@ -70,11 +70,17 @@ impl CodeGen {
                 }
             }
             GenType::FunctionCall { ident, values } => {
-                let mut values_str = values[0].clone();
+                let values_str = if !values.is_empty() {
+                    let mut values_str = values[0].clone();
 
-                for value in values.iter().skip(1) {
-                    values_str += &format!(", {value}")
-                }
+                    for value in values.iter().skip(1) {
+                        values_str += &format!(", {value}")
+                    }
+
+                    values_str
+                } else {
+                    String::new()
+                };
 
                 format!("{ident}({values_str})")
             }
@@ -121,6 +127,9 @@ impl CodeGen {
             Expression::Char(char) => format!("\"{char}\""),
             Expression::String(string) => format!("\"{string}\""),
             Expression::Number(number) => number.to_string(),
+            Expression::Indexing(l, r) => {
+                format!("{}.{}", Self::expr_to_value(*l), Self::expr_to_value(*r))
+            }
             _ => panic!(),
         }
     }
@@ -128,6 +137,7 @@ impl CodeGen {
     fn expr_to_value_with_type(&self, expr: Expression) -> (Option<String>, String) {
         let type_str: Option<String> = match expr.clone() {
             Expression::Identifier(_) => None,
+            Expression::Indexing(_, _) => None,
             Expression::Function { .. } => None,
             Expression::Parameter { expected_type, .. } => {
                 (*expected_type).map(Self::expr_to_value)
@@ -147,6 +157,10 @@ impl CodeGen {
         };
 
         (type_str, value_str)
+    }
+
+    fn indexing_to_value(l: Expression, r: Expression) -> String {
+        format!("{}.{}", Self::expr_to_value(l), Self::expr_to_value(r))
     }
 
     #[allow(clippy::only_used_in_recursion)]
@@ -198,6 +212,7 @@ impl CodeGen {
                                 local: false,
                                 ident: match ident {
                                     Expression::Identifier(ident) => format!("self.{ident}"),
+                                    Expression::Indexing(l, r) => Self::indexing_to_value(*l, *r),
                                     _ => panic!("{ident:?} can't be converted to identifier"),
                                 },
                                 value: value_str,
@@ -225,6 +240,7 @@ impl CodeGen {
                         local: true,
                         ident: match ident {
                             Expression::Identifier(ident) => ident,
+                            Expression::Indexing(l, r) => Self::indexing_to_value(*l, *r),
                             _ => panic!("{ident:?} can't be converted to identifier"),
                         },
                         value: value_ident.to_owned(),
@@ -275,6 +291,7 @@ impl CodeGen {
                         local: true,
                         ident: match ident {
                             Expression::Identifier(ident) => ident,
+                            Expression::Indexing(l, r) => Self::indexing_to_value(*l, *r),
                             _ => panic!("{ident:?} can't be converted to identifier"),
                         },
                         value: value_str,
@@ -285,6 +302,7 @@ impl CodeGen {
             Statement::FunctionCall { ident, args } => self.write(GenType::FunctionCall {
                 ident: match ident {
                     Expression::Identifier(ident) => ident,
+                    Expression::Indexing(l, r) => Self::indexing_to_value(*l, *r),
                     _ => panic!("{ident:?} can't be converted to identifier"),
                 },
                 values: args
