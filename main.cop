@@ -1,9 +1,11 @@
-class car {
+let workspace = game.GetService(game, "Workspace")
+
+class Car {
     let speed = 100
     let model = "xil ford"
 }
 
-let my_car = car.new()
+let my_car = Car.new()
 
 if my_car {
     return print(true)

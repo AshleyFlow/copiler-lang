@@ -91,7 +91,9 @@ impl Parser {
                         {
                             args.push(self.parse_expression().unwrap());
 
-                            if !matches!(self.cursor.eat(), Some(Token::Comma)) {
+                            if matches!(self.cursor.peek(None), Some(Token::Comma)) {
+                                self.cursor.eat();
+                            } else {
                                 break;
                             }
                         }
