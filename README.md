@@ -7,7 +7,7 @@ Copiler is a very dumb programming language that gets compiled into Luau
 Compile the example script
 
 ```shell
-cargo run ./main.cop
+cargo run .\examples\hello_world.cop
 ```
 
 Check out ./dist/out.luau to see the compiled result
