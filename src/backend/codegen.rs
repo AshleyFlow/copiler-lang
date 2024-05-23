@@ -150,14 +150,14 @@ impl CodeGen {
     }
 
     fn expr_to_value(expr: Expression) -> String {
-        match expr {
+        match expr.clone() {
             Expression::Identifier(ident) => ident,
             Expression::Parameter { ident, .. } => Self::expr_to_value(*ident),
             Expression::Char(char) => format!("\"{char}\""),
             Expression::String(string) => format!("\"{string}\""),
             Expression::Bool(bool) => format!("{bool}"),
             Expression::Number(number) => number.to_string(),
-            Expression::FunctionCall { ident, args } => {
+            Expression::FunctionCall { ident, args } | Expression::MethodCall { ident, args } => {
                 let args_str = if !args.is_empty() {
                     let mut args_str = Self::expr_to_value(args[0].clone());
 
@@ -197,6 +197,7 @@ impl CodeGen {
             Expression::Bool(_) => Some("boolean".into()),
             Expression::Function { .. } => None,
             Expression::FunctionCall { .. } => None,
+            Expression::MethodCall { .. } => None,
             Expression::And(_, r) => self.expr_to_value_with_type(*r).0,
             Expression::Or(_, r) => self.expr_to_value_with_type(*r).0,
             Expression::Parameter { expected_type, .. } => {
@@ -213,7 +214,11 @@ impl CodeGen {
     }
 
     fn indexing_to_value(l: Expression, r: Expression) -> String {
-        format!("{}.{}", Self::expr_to_value(l), Self::expr_to_value(r))
+        if matches!(r, Expression::MethodCall { .. }) {
+            format!("{}:{}", Self::expr_to_value(l), Self::expr_to_value(r))
+        } else {
+            format!("{}.{}", Self::expr_to_value(l), Self::expr_to_value(r))
+        }
     }
 
     #[allow(clippy::only_used_in_recursion)]
@@ -253,7 +258,6 @@ impl CodeGen {
                 self.write(GenType::RScope);
             }
             Statement::ClassConstructor { ident, body } => {
-                //
                 let ident_str = Self::expr_to_value(ident.clone());
 
                 self.write(GenType::VariableDeclaration {
@@ -389,6 +393,7 @@ impl CodeGen {
 
                     for param in params.iter().skip(1) {
                         let param_str = self.expr_to_value_with_type(param.clone());
+
                         params_str.push(if let Some(expected_type) = param_str.0 {
                             format!("{}: {expected_type}", param_str.1)
                         } else {

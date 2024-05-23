@@ -1,0 +1,15 @@
+let part = script.Parent
+
+let on_touched = (part: BasePart) {
+    let parent = part.Parent
+
+    if parent {
+        let humanoid = parent:FindFirstChild("Humanoid")
+
+        if humanoid {
+            humanoid:TakeDamage(100)
+        }
+    }
+}
+
+part.Touched:Connect(on_touched)

@@ -1,18 +1,6 @@
 # Copiler
 
-Copiler is a very dumb programming language that gets compiled into Luau, and it mostly let's you slide with doing crazy things, like:
-
-```js
-let testFunction = (100: "cool!", "a": 500.2) {
-
-}
-```
-
-or this, which is just... wrong
-
-```js
-let my_car = class {}
-```
+Copiler is a very dumb programming language that gets compiled into Luau
 
 ## Example
 

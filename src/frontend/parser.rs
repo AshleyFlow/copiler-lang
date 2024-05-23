@@ -25,6 +25,10 @@ pub enum Statement {
 
 #[derive(Debug, Clone)]
 pub enum Expression {
+    MethodCall {
+        ident: Box<Expression>,
+        args: Vec<Expression>,
+    },
     FunctionCall {
         ident: Box<Expression>,
         args: Vec<Expression>,
@@ -62,7 +66,10 @@ impl Parser {
                 Token::Identifier(identifier) => {
                     let identifier = Expression::Identifier(identifier);
 
-                    if matches!(self.cursor.peek(Some(2)), Some(Token::Dot)) {
+                    let dot = matches!(self.cursor.peek(Some(2)), Some(Token::Dot));
+                    let colon = matches!(self.cursor.peek(Some(2)), Some(Token::Colon));
+
+                    if dot || colon {
                         self.cursor.eat();
                         self.cursor.eat();
 
@@ -70,13 +77,23 @@ impl Parser {
 
                         match indexed.clone() {
                             Expression::FunctionCall { ident, args, .. } => {
-                                return Some(Expression::FunctionCall {
-                                    ident: Box::new(Expression::Indexing(
-                                        Box::new(identifier),
-                                        ident,
-                                    )),
-                                    args,
-                                });
+                                if colon {
+                                    return Some(Expression::MethodCall {
+                                        ident: Box::new(Expression::Indexing(
+                                            Box::new(identifier),
+                                            ident,
+                                        )),
+                                        args,
+                                    });
+                                } else {
+                                    return Some(Expression::FunctionCall {
+                                        ident: Box::new(Expression::Indexing(
+                                            Box::new(identifier),
+                                            ident,
+                                        )),
+                                        args,
+                                    });
+                                }
                             }
                             _ => {
                                 return Some(Expression::Indexing(
@@ -162,22 +179,28 @@ impl Parser {
     }
 
     fn parse_parameter(&mut self) -> Option<Expression> {
-        let ident = self.parse_expression();
+        let ident = self
+            .cursor
+            .eat_iff(|token| matches!(token, Token::Identifier(_)));
 
-        ident.as_ref()?;
+        let ident = ident.as_ref()?;
+        let ident = match ident {
+            Token::Identifier(ident) => Expression::Identifier(ident.to_string()),
+            _ => panic!(),
+        };
 
         let expected_type = if self
             .cursor
             .eat_iff(|token| matches!(token, Token::Colon))
             .is_some()
         {
-            self.parse_expression()
+            self.parse_single_expression()
         } else {
             None
         };
 
         Some(Expression::Parameter {
-            ident: Box::new(ident.unwrap()),
+            ident: Box::new(ident),
             expected_type: Box::new(expected_type),
         })
     }
