@@ -28,7 +28,9 @@ pub enum Expression {
         ident: Box<Expression>,
         expected_type: Box<Option<Expression>>,
     },
-    ClassBody,
+    ClassBody {
+        properties: Vec<Statement>,
+    },
     Identifier(String),
     String(String),
     Char(char),
@@ -86,21 +88,42 @@ impl Parser {
         })
     }
 
-    fn parse_class(&mut self) -> Statement {
-        // Statement::ClassConstructor { ident: (), body: () }
-        todo!()
+    fn parse_class_body(&mut self) -> Expression {
+        let mut properties = vec![];
+
+        self.cursor
+            .eat_iff(|token| matches!(token, Token::LScope))
+            .unwrap();
+
+        while let Some(token) = self.cursor.eat() {
+            let property = self.parse_variable();
+
+            if let Some(property) = property {
+                properties.push(property);
+            }
+
+            if matches!(token, Token::RScope) {
+                break;
+            }
+        }
+
+        Expression::ClassBody { properties }
     }
 
-    fn parse_variable(&mut self) -> Statement {
-        let ident = self.parse_expression().unwrap();
+    fn parse_class(&mut self) -> Statement {
+        let ident = self.parse_expression();
 
-        self.cursor.eat_iff(|token| {
-            if let Token::Equal = token {
-                true
-            } else {
-                panic!("Expected '=', got '{:?}'", token)
-            }
-        });
+        Statement::ClassConstructor {
+            ident: ident.expect("Expected class identifier"),
+            body: self.parse_class_body(),
+        }
+    }
+
+    fn parse_variable(&mut self) -> Option<Statement> {
+        let ident = self.parse_expression();
+        let ident = ident.as_ref()?.clone();
+
+        self.cursor.eat_iff(|token| matches!(token, Token::Equal))?;
 
         if matches!(self.cursor.peek(None), Some(Token::LParen)) {
             let mut params: Vec<Expression> = vec![];
@@ -126,17 +149,18 @@ impl Parser {
 
             let scope = self.parse_scope();
 
-            Statement::VariableDeclaration {
+            Some(Statement::VariableDeclaration {
                 ident,
                 value: Expression::Function {
                     params,
                     stmt: Box::new(scope),
                 },
-            }
+            })
         } else {
-            let value = self.parse_expression().unwrap();
+            let value = self.parse_expression();
+            let value = value.as_ref()?.clone();
 
-            Statement::VariableDeclaration { ident, value }
+            Some(Statement::VariableDeclaration { ident, value })
         }
     }
 
@@ -169,7 +193,7 @@ impl Parser {
         if let Some(token) = self.cursor.eat() {
             match token {
                 Token::Identifier(identifier) => match identifier.as_str() {
-                    "let" => Some(self.parse_variable()),
+                    "let" => Some(self.parse_variable().unwrap()),
                     "class" => Some(self.parse_class()),
                     _ => Some(self.parse_fn_call(identifier)),
                 },

@@ -1,3 +1,4 @@
-class test {
-
+class car {
+    let speed = 100
+    let model = "xil ford"
 }

@@ -2,6 +2,7 @@ use crate::frontend::parser::{Expression, Statement};
 
 pub enum GenType {
     VariableDeclaration {
+        local: bool,
         ident: String,
         value: String,
         value_type: Option<String>,
@@ -11,8 +12,17 @@ pub enum GenType {
         values: Vec<String>,
     },
     FunctionBody {
+        local: bool,
         ident: String,
         params: Vec<String>,
+    },
+    ClassConstructor {
+        ident: String,
+        props: String,
+        methods: Vec<Box<GenType>>,
+    },
+    Return {
+        value: String,
     },
     LScope,
     RScope,
@@ -38,14 +48,25 @@ impl CodeGen {
             GenType::LScope => "do".into(),
             GenType::RScope => "end".into(),
             GenType::VariableDeclaration {
+                local,
                 ident,
                 value,
                 value_type,
-            } => {
-                if let Some(value_type) = value_type {
-                    format!("local {ident}: {value_type} = {value}")
+            } =>
+            {
+                #[allow(clippy::collapsible_else_if)]
+                if local {
+                    if let Some(value_type) = value_type {
+                        format!("local {ident}: {value_type} = {value}")
+                    } else {
+                        format!("local {ident} = {value}")
+                    }
                 } else {
-                    format!("local {ident} = {value}")
+                    if let Some(value_type) = value_type {
+                        format!("{ident} = {value} :: {value_type}")
+                    } else {
+                        format!("{ident} = {value}")
+                    }
                 }
             }
             GenType::FunctionCall { ident, values } => {
@@ -57,15 +78,37 @@ impl CodeGen {
 
                 format!("{ident}({values_str})")
             }
-            GenType::FunctionBody { ident, params } => {
-                let mut params_str = params[0].clone();
+            GenType::FunctionBody {
+                local,
+                ident,
+                params,
+            } => {
+                let params_str = if !params.is_empty() {
+                    let mut params_str = params[0].clone();
 
-                for param in params.iter().skip(1) {
-                    params_str += &format!(", {param}")
+                    for param in params.iter().skip(1) {
+                        params_str += &format!(", {param}")
+                    }
+
+                    params_str
+                } else {
+                    String::new()
+                };
+
+                if local {
+                    format!("local function {ident}({params_str})")
+                } else {
+                    format!("function {ident}({params_str})")
                 }
-
-                format!("local function {ident}({params_str})")
             }
+            GenType::ClassConstructor {
+                ident,
+                props: _,
+                methods: _,
+            } => {
+                format!("local {ident} = {{}}")
+            }
+            GenType::Return { value } => format!("return {value}"),
         };
 
         let spaces = "    ".repeat(self.nest);
@@ -78,7 +121,6 @@ impl CodeGen {
             Expression::Char(char) => format!("\"{char}\""),
             Expression::String(string) => format!("\"{string}\""),
             Expression::Number(number) => number.to_string(),
-            Expression::Parameter { .. } => "".to_string(),
             _ => panic!(),
         }
     }
@@ -92,7 +134,7 @@ impl CodeGen {
             }
             Expression::Char(_) | Expression::String(_) => Some("string".into()),
             Expression::Number(_) => Some("number".into()),
-            Expression::ClassBody => todo!(),
+            Expression::ClassBody { .. } => todo!(),
         };
 
         let value_str = match expr {
@@ -121,12 +163,66 @@ impl CodeGen {
                 self.nest -= 1;
                 self.write(GenType::RScope);
             }
-            Statement::ClassConstructor { ident: _, body: _ } => {
-                todo!()
+            Statement::ClassConstructor { ident, body } => {
+                //
+                let ident_str = Self::expr_to_value(ident.clone());
+
+                self.write(GenType::VariableDeclaration {
+                    local: true,
+                    ident: ident_str.clone(),
+                    value: "{}".into(),
+                    value_type: None,
+                });
+
+                self.write(GenType::FunctionBody {
+                    local: false,
+                    ident: format!("{ident_str}.new"),
+                    params: vec![],
+                });
+
+                self.nest += 1;
+
+                self.write(GenType::VariableDeclaration {
+                    local: true,
+                    ident: String::from("self"),
+                    value: String::from("{}"),
+                    value_type: None,
+                });
+
+                if let Expression::ClassBody { properties } = body {
+                    for prop in properties {
+                        if let Statement::VariableDeclaration { ident, value } = prop {
+                            let (value_type_str, value_str) = self.expr_to_value_with_type(value);
+
+                            self.write(GenType::VariableDeclaration {
+                                local: false,
+                                ident: match ident {
+                                    Expression::Identifier(ident) => format!("self.{ident}"),
+                                    _ => panic!("{ident:?} can't be converted to identifier"),
+                                },
+                                value: value_str,
+                                value_type: value_type_str,
+                            })
+                        } else {
+                            todo!()
+                        }
+                    }
+                } else {
+                    panic!("{body:?} is not a valid class body")
+                }
+
+                self.write(GenType::Return {
+                    value: String::from("self"),
+                });
+
+                self.nest -= 1;
+
+                self.write(GenType::RScope);
             }
             Statement::VariableDeclaration { ident, value } => {
                 if let Expression::Identifier(value_ident) = value.clone() {
                     self.write(GenType::VariableDeclaration {
+                        local: true,
                         ident: match ident {
                             Expression::Identifier(ident) => ident,
                             _ => panic!("{ident:?} can't be converted to identifier"),
@@ -154,6 +250,7 @@ impl CodeGen {
                     }
 
                     self.write(GenType::FunctionBody {
+                        local: true,
                         ident: Self::expr_to_value(ident),
                         params: params_str,
                     });
@@ -175,6 +272,7 @@ impl CodeGen {
                     let (type_str, value_str) = self.expr_to_value_with_type(value);
 
                     self.write(GenType::VariableDeclaration {
+                        local: true,
                         ident: match ident {
                             Expression::Identifier(ident) => ident,
                             _ => panic!("{ident:?} can't be converted to identifier"),
