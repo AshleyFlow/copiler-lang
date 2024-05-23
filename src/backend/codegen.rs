@@ -139,6 +139,7 @@ impl CodeGen {
             Expression::Identifier(_) => None,
             Expression::Indexing(_, _) => None,
             Expression::Function { .. } => None,
+            Expression::FunctionCall { .. } => None,
             Expression::Parameter { expected_type, .. } => {
                 (*expected_type).map(Self::expr_to_value)
             }
@@ -153,6 +154,21 @@ impl CodeGen {
             Expression::Char(char) => format!("\"{char}\""),
             Expression::String(string) => format!("\"{string}\""),
             Expression::Number(number) => number.to_string(),
+            Expression::FunctionCall { ident, args } => {
+                let args_str = if !args.is_empty() {
+                    let mut args_str = Self::expr_to_value(args[0].clone());
+
+                    for value in args.iter().skip(1) {
+                        args_str += &format!(", {}", Self::expr_to_value(value.clone()))
+                    }
+
+                    args_str
+                } else {
+                    String::new()
+                };
+
+                format!("{}({args_str})", Self::expr_to_value(*ident))
+            }
             _ => panic!(),
         };
 
@@ -299,20 +315,6 @@ impl CodeGen {
                     });
                 }
             }
-            Statement::FunctionCall { ident, args } => self.write(GenType::FunctionCall {
-                ident: match ident {
-                    Expression::Identifier(ident) => ident,
-                    Expression::Indexing(l, r) => Self::indexing_to_value(*l, *r),
-                    _ => panic!("{ident:?} can't be converted to identifier"),
-                },
-                values: args
-                    .iter()
-                    .map(|expr| {
-                        let (_, value_str) = self.expr_to_value_with_type(expr.clone());
-                        value_str
-                    })
-                    .collect(),
-            }),
         }
     }
 

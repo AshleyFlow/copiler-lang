@@ -12,14 +12,14 @@ pub enum Statement {
         body: Expression,
     },
     Scope(Vec<Statement>),
-    FunctionCall {
-        ident: Expression,
-        args: Vec<Expression>,
-    },
 }
 
 #[derive(Debug, Clone)]
 pub enum Expression {
+    FunctionCall {
+        ident: Box<Expression>,
+        args: Vec<Expression>,
+    },
     Function {
         params: Vec<Expression>,
         stmt: Box<Statement>,
@@ -53,10 +53,34 @@ impl Parser {
                         self.cursor.eat();
                         self.cursor.eat();
 
-                        return Some(Expression::Indexing(
-                            Box::new(identifier),
-                            Box::new(self.parse_expression().unwrap()),
-                        ));
+                        let indexed = self.parse_expression().unwrap();
+
+                        match indexed.clone() {
+                            Expression::FunctionCall { ident, args, .. } => {
+                                return Some(Expression::FunctionCall {
+                                    ident: Box::new(Expression::Indexing(
+                                        Box::new(identifier),
+                                        ident,
+                                    )),
+                                    args,
+                                });
+                            }
+                            _ => {
+                                return Some(Expression::Indexing(
+                                    Box::new(identifier),
+                                    Box::new(indexed),
+                                ));
+                            }
+                        }
+                    } else if matches!(self.cursor.peek(Some(2)), Some(Token::LParen)) {
+                        self.cursor.eat();
+                        self.cursor.eat();
+
+                        Some(Expression::FunctionCall {
+                            ident: Box::new(identifier),
+                            // TODO
+                            args: vec![],
+                        })
                     } else {
                         Some(identifier)
                     }
@@ -203,7 +227,13 @@ impl Parser {
             .eat_iff(|token| matches!(token, Token::RParen))
             .unwrap();
 
-        Statement::FunctionCall { ident, args }
+        Statement::VariableDeclaration {
+            ident: Expression::Identifier(String::from("_")),
+            value: Expression::FunctionCall {
+                ident: Box::new(ident),
+                args,
+            },
+        }
     }
 
     pub fn parse_statement(&mut self) -> Option<Statement> {

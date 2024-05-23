@@ -3,4 +3,4 @@ class car {
     let model = "xil ford"
 }
 
-car.new()
+let my_car = car.new()
