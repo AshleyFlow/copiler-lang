@@ -1,6 +1,6 @@
 let part = script.Parent
 
-let on_touched = (part: BasePart) {
+part.Touched:Connect((part: BasePart) {
     let parent = part.Parent
 
     if parent {
@@ -10,6 +10,4 @@ let on_touched = (part: BasePart) {
             humanoid:TakeDamage(100)
         }
     }
-}
-
-part.Touched:Connect(on_touched)
+})

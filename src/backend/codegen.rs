@@ -7,6 +7,9 @@ pub enum GenType {
         value: String,
         value_type: Option<String>,
     },
+    AnonymousFunction {
+        params: Vec<String>,
+    },
     FunctionCall {
         ident: String,
         values: Vec<String>,
@@ -36,26 +39,27 @@ pub enum GenType {
     RScope,
 }
 
-pub struct CodeGen {
-    pub src: String,
-    root_stmt: Statement,
-    nest: usize,
-}
-
-impl CodeGen {
-    pub fn new(stmt: Statement) -> Self {
-        Self {
-            src: String::new(),
-            root_stmt: stmt,
-            nest: 0,
-        }
-    }
-
-    fn write(&mut self, code: GenType) {
-        let code: String = match code {
+impl GenType {
+    pub fn eval(&self) -> String {
+        match self {
             GenType::LScope => "do".into(),
             GenType::RScope => "end".into(),
             GenType::LIf { expr } => format!("if {expr} then"),
+            GenType::AnonymousFunction { params } => {
+                let params_str = if !params.is_empty() {
+                    let mut params_str = params[0].clone();
+
+                    for param in params.iter().skip(1) {
+                        params_str += &format!(", {param}")
+                    }
+
+                    params_str
+                } else {
+                    String::new()
+                };
+
+                format!("function({params_str})")
+            }
             GenType::VariableDeclaration {
                 local,
                 ident,
@@ -64,7 +68,7 @@ impl CodeGen {
             } =>
             {
                 #[allow(clippy::collapsible_else_if)]
-                if local {
+                if *local {
                     if let Some(value_type) = value_type {
                         format!("local {ident}: {value_type} = {value}")
                     } else {
@@ -129,7 +133,7 @@ impl CodeGen {
                     String::new()
                 };
 
-                if local {
+                if *local {
                     format!("local function {ident}({params_str})")
                 } else {
                     format!("function {ident}({params_str})")
@@ -143,8 +147,27 @@ impl CodeGen {
                 format!("local {ident} = {{}}")
             }
             GenType::Return { value } => format!("return {value}"),
-        };
+        }
+    }
+}
 
+pub struct CodeGen {
+    pub src: String,
+    root_stmt: Statement,
+    nest: usize,
+}
+
+impl CodeGen {
+    pub fn new(stmt: Statement) -> Self {
+        Self {
+            src: String::new(),
+            root_stmt: stmt,
+            nest: 0,
+        }
+    }
+
+    fn write(&mut self, code: GenType) {
+        let code: String = code.eval();
         let spaces = "    ".repeat(self.nest);
         self.src += &format!("{spaces}{code}\n");
     }
@@ -184,6 +207,36 @@ impl CodeGen {
             }
             Expression::Or(l, r) => {
                 format!("{} or {}", Self::expr_to_value(*l), Self::expr_to_value(*r))
+            }
+            Expression::Function { params, stmt } => {
+                let mut params_str = vec![];
+
+                if !params.is_empty() {
+                    let param_str = Self::expr_to_value_with_type(
+                        &Self::new(Statement::Scope(vec![])),
+                        params[0].clone(),
+                    );
+                    params_str.push(if let Some(expected_type) = param_str.0 {
+                        format!("{}: {expected_type}", param_str.1)
+                    } else {
+                        param_str.1
+                    });
+                }
+
+                let mut inner = Self::new(*stmt.clone());
+                inner.write(GenType::AnonymousFunction { params: params_str });
+
+                if let Statement::Scope(scope) = *stmt {
+                    for stmt in scope {
+                        inner.gen_statement(stmt.clone());
+                    }
+                } else {
+                    inner.gen_statement(*stmt);
+                }
+
+                inner.write(GenType::RScope);
+
+                inner.src
             }
             _ => unimplemented!("{expr:?}"),
         }

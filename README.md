@@ -42,6 +42,18 @@ let my_function = (name: string) {
 my_function("Cool!")
 ```
 
+### Anonymous Functions
+
+```js
+let my_function = (callback) {
+    callback()
+}
+
+my_function(() {
+    print("Hello!")
+})
+```
+
 ### Variables
 
 ```js

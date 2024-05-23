@@ -60,9 +60,51 @@ pub struct Parser {
 }
 
 impl Parser {
+    fn parse_anon_fn(&mut self) -> Option<Expression> {
+        self.cursor
+            .eat_iff(|token| matches!(token, Token::LParen))
+            .unwrap();
+
+        let mut args = vec![];
+
+        while self
+            .cursor
+            .peek_iff(None, |token| !matches!(token, Token::RParen))
+            .is_some()
+        {
+            args.push(self.parse_parameter().unwrap());
+
+            if matches!(self.cursor.peek(None), Some(Token::Comma)) {
+                self.cursor.eat();
+            } else {
+                break;
+            }
+        }
+
+        self.cursor
+            .eat_iff(|token| matches!(token, Token::RParen))
+            .unwrap();
+
+        self.cursor
+            .eat_iff(|token| matches!(token, Token::LScope))
+            .unwrap();
+
+        let scope = self.parse_scope();
+
+        self.cursor
+            .eat_iff(|token| matches!(token, Token::RScope))
+            .unwrap();
+
+        Some(Expression::Function {
+            params: args,
+            stmt: Box::new(scope),
+        })
+    }
+
     fn parse_single_expression(&mut self) -> Option<Expression> {
         if let Some(token) = self.cursor.peek(None) {
             let token = match token {
+                Token::LParen => self.parse_anon_fn(),
                 Token::Identifier(identifier) => {
                     let identifier = Expression::Identifier(identifier);
 
