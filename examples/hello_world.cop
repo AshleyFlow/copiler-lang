@@ -1,0 +1,14 @@
+let message = "Hello, World!"
+
+let main = (inner_message: string) {
+    if inner_message {
+        print(inner_message)
+        return 0
+    }
+
+    error("No message provided")
+
+    return 1
+}
+
+main(message)
