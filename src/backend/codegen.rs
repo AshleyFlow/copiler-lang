@@ -158,6 +158,9 @@ impl CodeGen {
                     Self::expr_to_value(*r)
                 )
             }
+            Expression::Or(l, r) => {
+                format!("{} or {}", Self::expr_to_value(*l), Self::expr_to_value(*r))
+            }
             _ => unimplemented!("{expr:?}"),
         }
     }
@@ -171,6 +174,7 @@ impl CodeGen {
             Expression::Function { .. } => None,
             Expression::FunctionCall { .. } => None,
             Expression::And(_, r) => self.expr_to_value_with_type(*r).0,
+            Expression::Or(_, r) => self.expr_to_value_with_type(*r).0,
             Expression::Parameter { expected_type, .. } => {
                 (*expected_type).map(Self::expr_to_value)
             }

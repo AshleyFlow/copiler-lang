@@ -39,6 +39,7 @@ pub enum Expression {
     Identifier(String),
     Indexing(Box<Expression>, Box<Expression>),
     And(Box<Expression>, Box<Expression>),
+    Or(Box<Expression>, Box<Expression>),
     String(String),
     Bool(bool),
     Char(char),
@@ -138,8 +139,15 @@ impl Parser {
                 .eat_iff(|token| matches!(token, Token::And))
                 .is_some()
             {
-                let r = self.parse_single_expression().unwrap();
+                let r = self.parse_expression().unwrap();
                 Some(Expression::And(Box::new(l.clone()), Box::new(r)))
+            } else if self
+                .cursor
+                .eat_iff(|token| matches!(token, Token::Or))
+                .is_some()
+            {
+                let r = self.parse_expression().unwrap();
+                Some(Expression::Or(Box::new(l.clone()), Box::new(r)))
             } else {
                 single_expr
             }

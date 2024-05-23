@@ -1,13 +1,14 @@
 let workspace = game.GetService(game, "Workspace")
 
-let get_workspace = () {
+let get_baseplate = () {
     let baseplate = workspace.FindFirstChild(workspace, "Basepart")
 
-    if workspace && baseplate {
+    if baseplate {
         return baseplate
     }
 
-    return nil
+    error("Couldn't find workspace")
 }
 
-print(get_workspace())
+let baseplate_exists = get_baseplate() && true || false
+print(baseplate_exists)
