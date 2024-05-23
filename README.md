@@ -61,3 +61,14 @@ if true {
     print("Hello, World!")
 }
 ```
+
+### Returning
+
+```js
+let my_function = () {
+    return 69.9
+}
+
+let x = my_function()
+print(x)
+```
