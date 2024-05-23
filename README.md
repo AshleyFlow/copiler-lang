@@ -8,7 +8,7 @@ let testFunction = (100: "cool!", "a": 500.2) {
 }
 ```
 
-or this, which is wrong, class {} is supposed to create a class constructor, not a class value:
+or this, which is just... wrong
 
 ```js
 let my_car = class {}
