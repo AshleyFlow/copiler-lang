@@ -254,7 +254,11 @@ impl CodeGen {
                     value_type: None,
                 });
 
-                if let Expression::ClassBody { properties } = body {
+                if let Expression::ClassBody {
+                    properties,
+                    methods,
+                } = body
+                {
                     for prop in properties {
                         if let Statement::VariableDeclaration { ident, value } = prop {
                             let (value_type_str, value_str) = self.expr_to_value_with_type(value);
@@ -269,6 +273,53 @@ impl CodeGen {
                                 value: value_str,
                                 value_type: value_type_str,
                             })
+                        } else {
+                            todo!()
+                        }
+                    }
+
+                    for method in methods {
+                        if let Statement::VariableDeclaration { ident, value } = method {
+                            if let Expression::Function { params, stmt } = value {
+                                let mut params_str = vec!["self".into()];
+
+                                if !params.is_empty() {
+                                    let param_str = self.expr_to_value_with_type(params[0].clone());
+                                    params_str.push(if let Some(expected_type) = param_str.0 {
+                                        format!("{}: {expected_type}", param_str.1)
+                                    } else {
+                                        param_str.1
+                                    });
+                                }
+
+                                self.write(GenType::FunctionBody {
+                                    local: false,
+                                    ident: match ident {
+                                        Expression::Identifier(ident) => format!("self.{ident}"),
+                                        Expression::Indexing(l, r) => {
+                                            Self::indexing_to_value(*l, *r)
+                                        }
+                                        _ => panic!("{ident:?} can't be converted to identifier"),
+                                    },
+                                    params: params_str,
+                                });
+
+                                if let Statement::Scope(scope) = *stmt {
+                                    self.nest += 1;
+
+                                    for stmt in scope {
+                                        self.gen_statement(stmt.clone());
+                                    }
+
+                                    self.nest -= 1;
+                                } else {
+                                    self.gen_statement(*stmt);
+                                }
+
+                                self.write(GenType::RScope);
+                            } else {
+                                panic!()
+                            }
                         } else {
                             todo!()
                         }

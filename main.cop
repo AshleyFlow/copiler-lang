@@ -1,17 +1,14 @@
-let workspace = game.GetService(game, "Workspace")
-
-let get_baseplate = () {
-    let baseplate = workspace.FindFirstChild(workspace, "Basepart")
-    return baseplate
+class Car {
+    let speed = 0
+    
+    let change_speed = (new: number) {
+        self.speed = new
+    }
 }
 
-let baseplate = get_baseplate()
-let baseplate_exists = baseplate && true || false
+let new_car = Car.new()
+new_car.change_speed(new_car, 10)
 
-print(baseplate, baseplate_exists)
+task.wait(1)
 
-baseplate.Name = "Ruin"
-
-task.wait(5)
-
-baseplate.Destroy(baseplate)
+new_car.change_speed(new_car, 0)

@@ -32,9 +32,15 @@ Check out ./dist/out.luau to see the compiled result
 class MyClass {
     let speed = 10
     let model = "xeltda ford"
+
+    let print_info = () {
+        print(self.speed, self.model)
+    }
 }
 
 let my_class = MyClass.new()
+my_class.print_info(my_class)
+
 ```
 
 ### Functions

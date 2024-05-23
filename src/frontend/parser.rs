@@ -39,6 +39,7 @@ pub enum Expression {
     },
     ClassBody {
         properties: Vec<Statement>,
+        methods: Vec<Statement>,
     },
     Identifier(String),
     Indexing(Box<Expression>, Box<Expression>),
@@ -183,6 +184,7 @@ impl Parser {
 
     fn parse_class_body(&mut self) -> Expression {
         let mut properties = vec![];
+        let mut methods = vec![];
 
         self.cursor
             .eat_iff(|token| matches!(token, Token::LScope))
@@ -196,13 +198,22 @@ impl Parser {
             let property = self.parse_variable();
 
             if let Some(property) = property {
-                properties.push(property);
+                if let Statement::VariableDeclaration { ident: _, value } = &property {
+                    if matches!(value, Expression::Function { .. }) {
+                        methods.push(property);
+                    } else {
+                        properties.push(property);
+                    }
+                }
             }
         }
 
         self.cursor.eat();
 
-        Expression::ClassBody { properties }
+        Expression::ClassBody {
+            properties,
+            methods,
+        }
     }
 
     fn parse_if_statement(&mut self) -> Statement {
