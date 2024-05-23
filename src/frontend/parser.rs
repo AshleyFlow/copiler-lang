@@ -21,6 +21,7 @@ pub enum Statement {
         body: Box<Statement>,
     },
     Scope(Vec<Statement>),
+    Luau(String),
 }
 
 #[derive(Debug, Clone)]
@@ -428,6 +429,11 @@ impl Parser {
                     Some(scope)
                 }
                 Token::RScope => None,
+                Token::Luau(code) => {
+                    self.cursor.eat();
+
+                    Some(Statement::Luau(code))
+                }
                 _ => todo!("{token:?}"),
             }
         } else {

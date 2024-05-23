@@ -5,6 +5,7 @@ pub enum Token {
     Identifier(String),
     Literal(Literal),
 
+    Luau(String),
     And,
     Or,
 
@@ -111,6 +112,27 @@ impl<'lexer> Lexer {
                 }
                 '"' => self.string(),
                 '\'' => self.char(),
+                '\\' => {
+                    self.cursor.eat();
+                    self.cursor.eat_iff(|char| char == '\\').unwrap();
+
+                    let mut buffer = String::new();
+
+                    loop {
+                        if matches!(self.cursor.peek(Some(1)), Some('\\'))
+                            && matches!(self.cursor.peek(Some(2)), Some('\\'))
+                        {
+                            self.cursor.eat();
+                            self.cursor.eat();
+
+                            break;
+                        }
+
+                        buffer += &self.cursor.eat().unwrap().to_string();
+                    }
+
+                    self.tokens.push(Token::Luau(buffer));
+                }
                 '{' => {
                     self.tokens.push(Token::LScope);
                     self.cursor.eat();

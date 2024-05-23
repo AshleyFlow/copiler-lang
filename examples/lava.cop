@@ -14,8 +14,11 @@ class Lava {
     }
 }
 
-let lava = Lava.new()
+\\
+-- this is luau code now
+local lava = Lava.new()
 
-lava.root.Touched:Connect((part: BasePart) {
-    lava.touched(lava, part)
-})
+lava.root.Touched:Connect(function(part: BasePart)
+    lava:touched(part)
+end)
+\\

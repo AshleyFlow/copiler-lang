@@ -1,6 +1,7 @@
 use crate::frontend::parser::{Expression, Statement};
 
 pub enum GenType {
+    Raw(String),
     VariableDeclaration {
         local: bool,
         ident: String,
@@ -42,6 +43,7 @@ pub enum GenType {
 impl GenType {
     pub fn eval(&self) -> String {
         match self {
+            GenType::Raw(src) => src.into(),
             GenType::LScope => "do".into(),
             GenType::RScope => "end".into(),
             GenType::LIf { expr } => format!("if {expr} then"),
@@ -277,6 +279,9 @@ impl CodeGen {
     #[allow(clippy::only_used_in_recursion)]
     fn gen_statement(&mut self, stmt: Statement) {
         match stmt.clone() {
+            Statement::Luau(code) => {
+                self.write(GenType::Raw(code));
+            }
             Statement::Return(expr) => self.write(GenType::Return {
                 value: Self::expr_to_value(expr),
             }),
