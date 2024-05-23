@@ -21,6 +21,9 @@ pub enum GenType {
         props: String,
         methods: Vec<Box<GenType>>,
     },
+    LIf {
+        expr: String,
+    },
     Return {
         value: String,
     },
@@ -47,6 +50,7 @@ impl CodeGen {
         let code: String = match code {
             GenType::LScope => "do".into(),
             GenType::RScope => "end".into(),
+            GenType::LIf { expr } => format!("if {expr} then"),
             GenType::VariableDeclaration {
                 local,
                 ident,
@@ -182,6 +186,25 @@ impl CodeGen {
     #[allow(clippy::only_used_in_recursion)]
     fn gen_statement(&mut self, stmt: Statement) {
         match stmt {
+            Statement::If { expr, body } => {
+                self.write(GenType::LIf {
+                    expr: Self::expr_to_value(expr),
+                });
+
+                self.nest += 1;
+
+                if let Statement::Scope(statements) = *body {
+                    for stmt in statements {
+                        self.gen_statement(stmt);
+                    }
+                } else {
+                    self.gen_statement(*body);
+                }
+
+                self.nest -= 1;
+
+                self.write(GenType::RScope);
+            }
             Statement::Scope(statements) => {
                 self.write(GenType::LScope);
                 self.nest += 1;

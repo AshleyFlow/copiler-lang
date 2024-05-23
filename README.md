@@ -53,3 +53,11 @@ my_function("Cool!")
 let x = 10
 let also_x = x
 ```
+
+### If Statements
+
+```js
+if true {
+    print("Hello, World!")
+}
+```

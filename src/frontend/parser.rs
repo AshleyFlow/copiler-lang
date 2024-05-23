@@ -11,6 +11,10 @@ pub enum Statement {
         ident: Expression,
         body: Expression,
     },
+    If {
+        expr: Expression,
+        body: Box<Statement>,
+    },
     Scope(Vec<Statement>),
 }
 
@@ -164,6 +168,21 @@ impl Parser {
         Expression::ClassBody { properties }
     }
 
+    fn parse_if_statement(&mut self) -> Statement {
+        let expr = self.parse_expression().unwrap();
+
+        self.cursor
+            .eat_iff(|token| matches!(token, Token::LScope))
+            .unwrap();
+
+        let body = self.parse_scope();
+
+        Statement::If {
+            expr,
+            body: Box::new(body),
+        }
+    }
+
     fn parse_class(&mut self) -> Statement {
         let ident = self.parse_expression();
 
@@ -219,33 +238,11 @@ impl Parser {
     }
 
     fn parse_fn_call(&mut self) -> Statement {
-        let mut args = vec![];
         let ident = self.parse_expression().unwrap();
-
-        self.cursor
-            .eat_iff(|token| matches!(token, Token::LParen))
-            .unwrap();
-
-        while let Some(expr) = self.parse_expression() {
-            args.push(expr);
-
-            if matches!(self.cursor.peek(None), Some(Token::Comma)) {
-                self.cursor.eat();
-            } else {
-                break;
-            }
-        }
-
-        self.cursor
-            .eat_iff(|token| matches!(token, Token::RParen))
-            .unwrap();
 
         Statement::VariableDeclaration {
             ident: Expression::Identifier(String::from("_")),
-            value: Expression::FunctionCall {
-                ident: Box::new(ident),
-                args,
-            },
+            value: ident,
         }
     }
 
@@ -261,16 +258,17 @@ impl Parser {
                         self.cursor.eat();
                         Some(self.parse_class())
                     }
+                    "if" => {
+                        self.cursor.eat();
+                        Some(self.parse_if_statement())
+                    }
                     _ => Some(self.parse_fn_call()),
                 },
                 Token::LScope => {
                     self.cursor.eat();
                     Some(self.parse_scope())
                 }
-                Token::RScope => {
-                    self.cursor.eat();
-                    None
-                }
+                Token::RScope => None,
                 _ => todo!("{token:?}"),
             }
         } else {
