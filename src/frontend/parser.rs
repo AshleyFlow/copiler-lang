@@ -38,6 +38,7 @@ pub enum Expression {
     Identifier(String),
     Indexing(Box<Expression>, Box<Expression>),
     String(String),
+    Bool(bool),
     Char(char),
     Number(f32),
 }
@@ -107,6 +108,7 @@ impl Parser {
                     Literal::Identifier(ident) => Some(Expression::Identifier(ident)),
                     Literal::Number(number) => Some(Expression::Number(number)),
                     Literal::String(string) => Some(Expression::String(string)),
+                    Literal::Bool(bool) => Some(Expression::Bool(bool)),
                 },
                 _ => None,
             };

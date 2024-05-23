@@ -18,6 +18,7 @@ pub enum Token {
 #[derive(PartialEq, Clone, Debug)]
 pub enum Literal {
     Identifier(String),
+    Bool(bool),
     String(String),
     Number(f32),
     Char(char),
@@ -40,7 +41,12 @@ impl<'lexer> Lexer {
             buffer.push(self.cursor.eat().unwrap());
         }
 
-        self.tokens.push(Token::Identifier(buffer));
+        if buffer == "true" || buffer == "false" {
+            self.tokens
+                .push(Token::Literal(Literal::Bool(buffer == "true")));
+        } else {
+            self.tokens.push(Token::Identifier(buffer));
+        }
     }
 
     fn number(&mut self) {

@@ -142,6 +142,7 @@ impl CodeGen {
         let type_str: Option<String> = match expr.clone() {
             Expression::Identifier(_) => None,
             Expression::Indexing(_, _) => None,
+            Expression::Bool(_) => Some("boolean".into()),
             Expression::Function { .. } => None,
             Expression::FunctionCall { .. } => None,
             Expression::Parameter { expected_type, .. } => {
@@ -157,6 +158,7 @@ impl CodeGen {
             Expression::Parameter { ident, .. } => Self::expr_to_value(*ident),
             Expression::Char(char) => format!("\"{char}\""),
             Expression::String(string) => format!("\"{string}\""),
+            Expression::Bool(bool) => format!("{bool}"),
             Expression::Number(number) => number.to_string(),
             Expression::FunctionCall { ident, args } => {
                 let args_str = if !args.is_empty() {
