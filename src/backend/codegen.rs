@@ -265,12 +265,14 @@ impl CodeGen {
                 } else if let Expression::Function { params, stmt } = value {
                     let mut params_str = vec![];
 
-                    let param_str = self.expr_to_value_with_type(params[0].clone());
-                    params_str.push(if let Some(expected_type) = param_str.0 {
-                        format!("{}: {expected_type}", param_str.1)
-                    } else {
-                        param_str.1
-                    });
+                    if !params.is_empty() {
+                        let param_str = self.expr_to_value_with_type(params[0].clone());
+                        params_str.push(if let Some(expected_type) = param_str.0 {
+                            format!("{}: {expected_type}", param_str.1)
+                        } else {
+                            param_str.1
+                        });
+                    }
 
                     for param in params.iter().skip(1) {
                         let param_str = self.expr_to_value_with_type(param.clone());
