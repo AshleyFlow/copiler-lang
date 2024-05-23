@@ -151,10 +151,18 @@ impl CodeGen {
             Expression::Indexing(l, r) => {
                 format!("{}.{}", Self::expr_to_value(*l), Self::expr_to_value(*r))
             }
+            Expression::And(l, r) => {
+                format!(
+                    "{} and {}",
+                    Self::expr_to_value(*l),
+                    Self::expr_to_value(*r)
+                )
+            }
             _ => unimplemented!("{expr:?}"),
         }
     }
 
+    #[allow(clippy::only_used_in_recursion)]
     fn expr_to_value_with_type(&self, expr: Expression) -> (Option<String>, String) {
         let type_str: Option<String> = match expr.clone() {
             Expression::Identifier(_) => None,
@@ -162,6 +170,7 @@ impl CodeGen {
             Expression::Bool(_) => Some("boolean".into()),
             Expression::Function { .. } => None,
             Expression::FunctionCall { .. } => None,
+            Expression::And(_, r) => self.expr_to_value_with_type(*r).0,
             Expression::Parameter { expected_type, .. } => {
                 (*expected_type).map(Self::expr_to_value)
             }

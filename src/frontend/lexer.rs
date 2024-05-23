@@ -5,6 +5,8 @@ pub enum Token {
     Identifier(String),
     Literal(Literal),
 
+    And,
+
     Colon,
     LScope,
     RScope,
@@ -44,6 +46,8 @@ impl<'lexer> Lexer {
         if buffer == "true" || buffer == "false" {
             self.tokens
                 .push(Token::Literal(Literal::Bool(buffer == "true")));
+        } else if buffer == "and" {
+            panic!("Did you mean to use '&' instead of 'and'?");
         } else {
             self.tokens.push(Token::Identifier(buffer));
         }
@@ -136,6 +140,10 @@ impl<'lexer> Lexer {
                 }
                 '.' => {
                     self.tokens.push(Token::Dot);
+                    self.cursor.eat();
+                }
+                '&' => {
+                    self.tokens.push(Token::And);
                     self.cursor.eat();
                 }
                 _ => {

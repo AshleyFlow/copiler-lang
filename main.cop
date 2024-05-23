@@ -1,8 +1,13 @@
 let workspace = game.GetService(game, "Workspace")
 
-let getWorkspace = () {
-    return workspace.FindFirstChild(workspace, "Basepart")
+let get_workspace = () {
+    let baseplate = workspace.FindFirstChild(workspace, "Basepart")
+
+    if workspace & baseplate {
+        return baseplate
+    }
+
+    return nil
 }
 
-print(getWorkspace())
-print(10, 25, 50)
+print(get_workspace())

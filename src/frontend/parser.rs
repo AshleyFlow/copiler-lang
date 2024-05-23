@@ -38,6 +38,7 @@ pub enum Expression {
     },
     Identifier(String),
     Indexing(Box<Expression>, Box<Expression>),
+    And(Box<Expression>, Box<Expression>),
     String(String),
     Bool(bool),
     Char(char),
@@ -49,7 +50,7 @@ pub struct Parser {
 }
 
 impl Parser {
-    fn parse_expression(&mut self) -> Option<Expression> {
+    fn parse_single_expression(&mut self) -> Option<Expression> {
         if let Some(token) = self.cursor.peek(None) {
             let token = match token {
                 Token::Identifier(identifier) => {
@@ -125,6 +126,25 @@ impl Parser {
             }
         } else {
             None
+        }
+    }
+
+    fn parse_expression(&mut self) -> Option<Expression> {
+        let single_expr = self.parse_single_expression();
+
+        if let Some(ref l) = single_expr {
+            if self
+                .cursor
+                .eat_iff(|token| matches!(token, Token::And))
+                .is_some()
+            {
+                let r = self.parse_single_expression().unwrap();
+                Some(Expression::And(Box::new(l.clone()), Box::new(r)))
+            } else {
+                single_expr
+            }
+        } else {
+            single_expr
         }
     }
 
