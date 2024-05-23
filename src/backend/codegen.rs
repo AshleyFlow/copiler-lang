@@ -16,6 +16,11 @@ pub enum GenType {
         ident: String,
         params: Vec<String>,
     },
+    MethodBody {
+        parent: String,
+        ident: String,
+        params: Vec<String>,
+    },
     ClassConstructor {
         ident: String,
         props: String,
@@ -87,6 +92,25 @@ impl CodeGen {
                 };
 
                 format!("{ident}({values_str})")
+            }
+            GenType::MethodBody {
+                parent,
+                ident,
+                params,
+            } => {
+                let params_str = if !params.is_empty() {
+                    let mut params_str = params[0].clone();
+
+                    for param in params.iter().skip(1) {
+                        params_str += &format!(", {param}")
+                    }
+
+                    params_str
+                } else {
+                    String::new()
+                };
+
+                format!("function {parent}:{ident}({params_str})")
             }
             GenType::FunctionBody {
                 local,
@@ -281,7 +305,7 @@ impl CodeGen {
                     for method in methods {
                         if let Statement::VariableDeclaration { ident, value } = method {
                             if let Expression::Function { params, stmt } = value {
-                                let mut params_str = vec!["self".into()];
+                                let mut params_str = vec![];
 
                                 if !params.is_empty() {
                                     let param_str = self.expr_to_value_with_type(params[0].clone());
@@ -292,10 +316,10 @@ impl CodeGen {
                                     });
                                 }
 
-                                self.write(GenType::FunctionBody {
-                                    local: false,
+                                self.write(GenType::MethodBody {
+                                    parent: "self".into(),
                                     ident: match ident {
-                                        Expression::Identifier(ident) => format!("self.{ident}"),
+                                        Expression::Identifier(ident) => ident,
                                         Expression::Indexing(l, r) => {
                                             Self::indexing_to_value(*l, *r)
                                         }
