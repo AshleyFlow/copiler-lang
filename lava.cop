@@ -1,13 +1,21 @@
-let part = script.Parent
+class Lava {
+    let root = script.Parent
 
-part.Touched:Connect((part: BasePart) {
-    let parent = part.Parent
+    let touched = (part: BasePart) {
+        let parent = part.Parent
 
-    if parent {
-        let humanoid = parent:FindFirstChild("Humanoid")
+        if parent {
+            let humanoid = parent:FindFirstChild("Humanoid")
 
-        if humanoid {
-            humanoid:TakeDamage(100)
+            if humanoid {
+                humanoid:TakeDamage(100)
+            }
         }
     }
+}
+
+let lava = Lava.new()
+
+lava.root.Touched:Connect((part: BasePart) {
+    lava.touched(lava, part)
 })

@@ -95,6 +95,10 @@ impl Parser {
             .eat_iff(|token| matches!(token, Token::RScope))
             .unwrap();
 
+        self.cursor
+            .eat_iff(|token| matches!(token, Token::RParen))
+            .unwrap();
+
         Some(Expression::Function {
             params: args,
             stmt: Box::new(scope),
@@ -104,7 +108,7 @@ impl Parser {
     fn parse_single_expression(&mut self) -> Option<Expression> {
         if let Some(token) = self.cursor.peek(None) {
             let token = match token {
-                Token::LParen => self.parse_anon_fn(),
+                Token::LParen => return self.parse_anon_fn(),
                 Token::Identifier(identifier) => {
                     let identifier = Expression::Identifier(identifier);
 
