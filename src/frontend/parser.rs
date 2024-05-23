@@ -76,10 +76,23 @@ impl Parser {
                         self.cursor.eat();
                         self.cursor.eat();
 
+                        let mut args = vec![];
+
+                        while self
+                            .cursor
+                            .peek_iff(None, |token| !matches!(token, Token::RParen))
+                            .is_some()
+                        {
+                            args.push(self.parse_expression().unwrap());
+
+                            if !matches!(self.cursor.eat(), Some(Token::Comma)) {
+                                break;
+                            }
+                        }
+
                         Some(Expression::FunctionCall {
                             ident: Box::new(identifier),
-                            // TODO
-                            args: vec![],
+                            args,
                         })
                     } else {
                         Some(identifier)
