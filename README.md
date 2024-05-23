@@ -28,7 +28,6 @@ class MyClass {
 
 let my_class = MyClass.new()
 my_class.print_info(my_class)
-my_class:print_info()
 
 ```
 
@@ -92,4 +91,28 @@ let my_function = () {
 
 let x = my_function()
 print(x)
+```
+
+### Luau
+
+You can directly write luau
+
+```js
+class MyClass {
+    let speed = 10
+    let model = "xeltda ford"
+
+    let print_info = () {
+        \\
+        print(self.speed, self.model)
+        \\
+    }
+}
+
+\\
+-- luau code here
+let my_class = MyClass.new()
+my_class:print_info()
+\\
+
 ```
