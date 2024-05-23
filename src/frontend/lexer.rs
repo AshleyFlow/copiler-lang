@@ -143,6 +143,9 @@ impl<'lexer> Lexer {
                     self.cursor.eat();
                 }
                 '&' => {
+                    self.cursor.eat();
+                    self.cursor.eat_iff(|char| char == '&').unwrap();
+
                     self.tokens.push(Token::And);
                     self.cursor.eat();
                 }

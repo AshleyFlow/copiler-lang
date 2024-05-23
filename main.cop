@@ -3,7 +3,7 @@ let workspace = game.GetService(game, "Workspace")
 let get_workspace = () {
     let baseplate = workspace.FindFirstChild(workspace, "Basepart")
 
-    if workspace & baseplate {
+    if workspace && baseplate {
         return baseplate
     }
 
