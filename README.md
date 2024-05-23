@@ -62,6 +62,19 @@ if true {
 }
 ```
 
+### 'and' and 'or'
+
+```js
+
+let part = get_part() && true || false
+```
+
+which turns into:
+
+```lua
+local part: boolean = get_part() and true or false
+```
+
 ### Returning
 
 ```js
