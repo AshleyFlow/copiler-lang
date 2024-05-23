@@ -1,12 +1,8 @@
 let workspace = game.GetService(game, "Workspace")
 
-class Car {
-    let speed = 100
-    let model = "xil ford"
+let getWorkspace = () {
+    return workspace.FindFirstChild(workspace, "Basepart")
 }
 
-let my_car = Car.new()
-
-if my_car {
-    return print(true)
-}
+print(getWorkspace())
+print(10, 25, 50)

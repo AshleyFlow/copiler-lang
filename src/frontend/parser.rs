@@ -182,6 +182,10 @@ impl Parser {
 
         let body = self.parse_scope();
 
+        self.cursor
+            .eat_iff(|token| matches!(token, Token::RScope))
+            .unwrap();
+
         Statement::If {
             expr,
             body: Box::new(body),
@@ -226,6 +230,10 @@ impl Parser {
                 .unwrap();
 
             let scope = self.parse_scope();
+
+            self.cursor
+                .eat_iff(|token| matches!(token, Token::RScope))
+                .unwrap();
 
             Some(Statement::VariableDeclaration {
                 ident,
@@ -278,7 +286,14 @@ impl Parser {
                 },
                 Token::LScope => {
                     self.cursor.eat();
-                    Some(self.parse_scope())
+
+                    let scope = self.parse_scope();
+
+                    self.cursor
+                        .eat_iff(|token| matches!(token, Token::RScope))
+                        .unwrap();
+
+                    Some(scope)
                 }
                 Token::RScope => None,
                 _ => todo!("{token:?}"),
