@@ -11,6 +11,7 @@ pub enum Statement {
         ident: Expression,
         body: Expression,
     },
+    Return(Expression),
     If {
         expr: Expression,
         body: Box<Statement>,
@@ -263,6 +264,13 @@ impl Parser {
                     "if" => {
                         self.cursor.eat();
                         Some(self.parse_if_statement())
+                    }
+                    "return" => {
+                        self.cursor.eat();
+                        Some(Statement::Return(
+                            self.parse_expression()
+                                .unwrap_or(Expression::Identifier("nil".into())),
+                        ))
                     }
                     _ => Some(self.parse_fn_call()),
                 },

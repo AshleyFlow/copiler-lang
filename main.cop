@@ -4,8 +4,7 @@ class car {
 }
 
 let my_car = car.new()
-let my_car_exists = true
 
-if my_car_exists {
-    print(my_car)
+if my_car {
+    return print(true)
 }

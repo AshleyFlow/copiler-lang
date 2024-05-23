@@ -128,33 +128,6 @@ impl CodeGen {
     fn expr_to_value(expr: Expression) -> String {
         match expr {
             Expression::Identifier(ident) => ident,
-            Expression::Char(char) => format!("\"{char}\""),
-            Expression::String(string) => format!("\"{string}\""),
-            Expression::Number(number) => number.to_string(),
-            Expression::Indexing(l, r) => {
-                format!("{}.{}", Self::expr_to_value(*l), Self::expr_to_value(*r))
-            }
-            _ => panic!(),
-        }
-    }
-
-    fn expr_to_value_with_type(&self, expr: Expression) -> (Option<String>, String) {
-        let type_str: Option<String> = match expr.clone() {
-            Expression::Identifier(_) => None,
-            Expression::Indexing(_, _) => None,
-            Expression::Bool(_) => Some("boolean".into()),
-            Expression::Function { .. } => None,
-            Expression::FunctionCall { .. } => None,
-            Expression::Parameter { expected_type, .. } => {
-                (*expected_type).map(Self::expr_to_value)
-            }
-            Expression::Char(_) | Expression::String(_) => Some("string".into()),
-            Expression::Number(_) => Some("number".into()),
-            Expression::ClassBody { .. } => todo!(),
-        };
-
-        let value_str = match expr {
-            Expression::Identifier(ident) => ident,
             Expression::Parameter { ident, .. } => Self::expr_to_value(*ident),
             Expression::Char(char) => format!("\"{char}\""),
             Expression::String(string) => format!("\"{string}\""),
@@ -175,8 +148,29 @@ impl CodeGen {
 
                 format!("{}({args_str})", Self::expr_to_value(*ident))
             }
-            _ => panic!(),
+            Expression::Indexing(l, r) => {
+                format!("{}.{}", Self::expr_to_value(*l), Self::expr_to_value(*r))
+            }
+            _ => unimplemented!("{expr:?}"),
+        }
+    }
+
+    fn expr_to_value_with_type(&self, expr: Expression) -> (Option<String>, String) {
+        let type_str: Option<String> = match expr.clone() {
+            Expression::Identifier(_) => None,
+            Expression::Indexing(_, _) => None,
+            Expression::Bool(_) => Some("boolean".into()),
+            Expression::Function { .. } => None,
+            Expression::FunctionCall { .. } => None,
+            Expression::Parameter { expected_type, .. } => {
+                (*expected_type).map(Self::expr_to_value)
+            }
+            Expression::Char(_) | Expression::String(_) => Some("string".into()),
+            Expression::Number(_) => Some("number".into()),
+            Expression::ClassBody { .. } => todo!(),
         };
+
+        let value_str = Self::expr_to_value(expr);
 
         (type_str, value_str)
     }
@@ -188,6 +182,9 @@ impl CodeGen {
     #[allow(clippy::only_used_in_recursion)]
     fn gen_statement(&mut self, stmt: Statement) {
         match stmt {
+            Statement::Return(expr) => self.write(GenType::Return {
+                value: Self::expr_to_value(expr),
+            }),
             Statement::If { expr, body } => {
                 self.write(GenType::LIf {
                     expr: Self::expr_to_value(expr),
