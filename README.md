@@ -28,6 +28,7 @@ class MyClass {
 
 let my_class = MyClass.new()
 my_class.print_info(my_class)
+my_class:print_info()
 
 ```
 
@@ -61,7 +62,6 @@ if true {
 ### 'and' and 'or'
 
 ```js
-
 let part = get_part() && true || false
 ```
 
