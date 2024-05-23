@@ -52,6 +52,8 @@ my_function("Cool!")
 ```js
 let x = 10
 let also_x = x
+
+x = 50
 ```
 
 ### If Statements

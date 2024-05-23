@@ -194,7 +194,7 @@ impl CodeGen {
 
     #[allow(clippy::only_used_in_recursion)]
     fn gen_statement(&mut self, stmt: Statement) {
-        match stmt {
+        match stmt.clone() {
             Statement::Return(expr) => self.write(GenType::Return {
                 value: Self::expr_to_value(expr),
             }),
@@ -285,10 +285,13 @@ impl CodeGen {
 
                 self.write(GenType::RScope);
             }
-            Statement::VariableDeclaration { ident, value } => {
+            Statement::VariableDeclaration { ident, value }
+            | Statement::VariableAssignment { ident, value } => {
+                let local = matches!(stmt, Statement::VariableDeclaration { .. });
+
                 if let Expression::Identifier(value_ident) = value.clone() {
                     self.write(GenType::VariableDeclaration {
-                        local: true,
+                        local,
                         ident: match ident {
                             Expression::Identifier(ident) => ident,
                             Expression::Indexing(l, r) => Self::indexing_to_value(*l, *r),
@@ -319,7 +322,7 @@ impl CodeGen {
                     }
 
                     self.write(GenType::FunctionBody {
-                        local: true,
+                        local,
                         ident: Self::expr_to_value(ident),
                         params: params_str,
                     });
@@ -341,7 +344,7 @@ impl CodeGen {
                     let (type_str, value_str) = self.expr_to_value_with_type(value);
 
                     self.write(GenType::VariableDeclaration {
-                        local: true,
+                        local,
                         ident: match ident {
                             Expression::Identifier(ident) => ident,
                             Expression::Indexing(l, r) => Self::indexing_to_value(*l, *r),

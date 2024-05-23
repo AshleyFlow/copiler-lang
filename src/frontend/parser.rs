@@ -3,6 +3,10 @@ use crate::util::cursor::Cursor;
 
 #[derive(Debug, Clone)]
 pub enum Statement {
+    VariableAssignment {
+        ident: Expression,
+        value: Expression,
+    },
     VariableDeclaration {
         ident: Expression,
         value: Expression,
@@ -278,8 +282,20 @@ impl Parser {
         }
     }
 
-    fn parse_fn_call(&mut self) -> Statement {
-        let ident = self.parse_expression().unwrap();
+    fn parse_variable_assignment(&mut self, ident: Option<Expression>) -> Statement {
+        let ident = ident.unwrap_or_else(|| self.parse_expression().unwrap());
+
+        self.cursor
+            .eat_iff(|token| matches!(token, Token::Equal))
+            .unwrap();
+
+        let value = self.parse_expression().unwrap();
+
+        Statement::VariableAssignment { ident, value }
+    }
+
+    fn parse_fn_call(&mut self, ident: Option<Expression>) -> Statement {
+        let ident = ident.unwrap_or_else(|| self.parse_expression().unwrap());
 
         Statement::VariableDeclaration {
             ident: Expression::Identifier(String::from("_")),
@@ -289,7 +305,7 @@ impl Parser {
 
     pub fn parse_statement(&mut self) -> Option<Statement> {
         if let Some(token) = self.cursor.peek(None) {
-            match token {
+            match token.clone() {
                 Token::Identifier(identifier) => match identifier.as_str() {
                     "let" => {
                         self.cursor.eat();
@@ -310,7 +326,15 @@ impl Parser {
                                 .unwrap_or(Expression::Identifier("nil".into())),
                         ))
                     }
-                    _ => Some(self.parse_fn_call()),
+                    _ => {
+                        let index = self.parse_expression();
+
+                        if matches!(self.cursor.peek(None), Some(Token::Equal)) {
+                            Some(self.parse_variable_assignment(index))
+                        } else {
+                            Some(self.parse_fn_call(index))
+                        }
+                    }
                 },
                 Token::LScope => {
                     self.cursor.eat();

@@ -2,13 +2,16 @@ let workspace = game.GetService(game, "Workspace")
 
 let get_baseplate = () {
     let baseplate = workspace.FindFirstChild(workspace, "Basepart")
-
-    if baseplate {
-        return baseplate
-    }
-
-    error("Couldn't find workspace")
+    return baseplate
 }
 
-let baseplate_exists = get_baseplate() && true || false
-print(baseplate_exists)
+let baseplate = get_baseplate()
+let baseplate_exists = baseplate && true || false
+
+print(baseplate, baseplate_exists)
+
+baseplate.Name = "Ruin"
+
+task.wait(5)
+
+baseplate.Destroy(baseplate)
