@@ -123,8 +123,12 @@ impl Parser {
                         let indexed = self.parse_expression().unwrap();
 
                         match indexed.clone() {
-                            Expression::FunctionCall { ident, args, .. } => {
+                            Expression::FunctionCall {
+                                ident, mut args, ..
+                            } => {
                                 if colon {
+                                    args.insert(0, identifier.clone());
+
                                     return Some(Expression::MethodCall {
                                         ident: Box::new(Expression::Indexing(
                                             Box::new(identifier),
